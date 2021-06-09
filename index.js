@@ -3,9 +3,63 @@ const MobileDetect=require('mobile-detect');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
+const mongoose = require('mongoose');
+
+//DB initialize
+
+mongoose.set('useNewUrlParser', true);
+mongoose.set('useFindAndModify', false);
+mongoose.set('useCreateIndex', true);
+mongoose.set('useUnifiedTopology', true);
+mongoose.connect(process.env.MONGO_DB);
+const db = mongoose.connection;
+db.once('open', ()=>console.log("DB successfully connected"));
+db.on('error',(err)=>console.log("DB connection failed : ", err));
+
+const schema = mongoose.Schema({
+  word: {type:String, required:true, unique:true},
+  count:{type:Number}
+});
+const starModel = mongoose.model('star_list',schema)
+
+
+function loadDB()
+{
+  console.log("DB Loaded!");
+  starModel.find({}, function(err, res){
+    if(err) console.log("Error!", err);
+    else io.emit('initialize_star', res);
+  });
+}
+
+function addDB(data)
+{
+  starModel.findOne({word:data}, function(err, res){
+    if(err) {console.log("Error!", err); return;}
+    
+    let lumen = 0;
+    // if your word is new
+    if(res == null)
+    {
+      starModel.create({word:data, count:1});
+      lumen=1;
+    }
+    // if someone already posted your word
+    else
+    {
+      lumen=res.count+1;
+      starModel.findOneAndUpdate({word:data},
+        {word:data, count:lumen},
+        {new : true},
+        (err, c)=>{});
+    }
+
+    io.emit('broadcast_star', data, lumen);
+  });
+}
+
 
 //initialize app
-app.use(express.static('public'));
 
 app.get("/",(req,res)=>{
   //mobile page redirection
@@ -13,13 +67,20 @@ app.get("/",(req,res)=>{
   let isMobile=Boolean(md.os());
   console.log(isMobile);
   if(isMobile) res.redirect("/mobile");
-
-  res.sendFile("index.html", { root: __dirname+"/public" });
+  else
+  {
+    loadDB();
+    res.sendFile("index.html", { root: __dirname+"/public" });
+  }
+  
 });
 
 app.get("/mobile",(req,res)=>{
+  loadDB();
   res.sendFile("mobile.html", { root: __dirname+"/public" });
 });
+
+app.use(express.static('public'));
 
 
 //socket
@@ -34,7 +95,8 @@ io.on('connection', function(socket){
 
   socket.on('launch_star', function(text){
     console.log(text);
-    io.emit('broadcast_star', text);
+    addDB(text);
+//    io.emit('broadcast_star', text);
   });
 
 });

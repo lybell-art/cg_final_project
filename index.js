@@ -1,9 +1,10 @@
 const express = require('express');
-const MobileDetect=require('mobile-detect');
 const app = express();
 const http = require('http').Server(app);
-const io = require('socket.io')(http);
-const mongoose = require('mongoose');
+const io = require('socket.io')(http); // to use real-time experirence
+
+const MobileDetect=require('mobile-detect'); // to mobile detection & redirection
+const mongoose = require('mongoose'); // to use db
 
 //DB initialize
 
@@ -57,7 +58,6 @@ function addDB(data)
     io.emit('broadcast_star', data, lumen);
   });
 }
-
 
 //initialize app
 

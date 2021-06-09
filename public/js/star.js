@@ -1,5 +1,5 @@
-import * as THREE from '/libs/three.module.js';
-import { UnrealBloomPass } from '/libs/plugins/OBJLoader.js';
+import * as THREE from './libs/three.module.js';
+import { UnrealBloomPass } from './libs/plugins/UnrealBloomPass.js';
 
 class CelestalSphere
 {
@@ -19,15 +19,24 @@ class CelestalSphere
 	}
 }
 
+function makeTextMaterial(text)
+{
+	const canvas=document.createElement('canvas');
+}
+
 class StarWord
 {
 	initialize(word, lumen)
 	{
 		this.word=word;
-		this.lumen=lumen;
-		this.position=new THREE.Vector3.random3D;
-		this.mesh=null;
-		this.mesh_shader=null;
+		this._lumen=lumen;
+		this.geometry = new THREE.BufferGeometry();
+		this.material = new THREE.PointsMaterial({size: this.lumen*5, vertexColors: true});
+		this.mesh=new THREE.Points(geometry, material);
+	}
+	get lumen()
+	{
+		return Math.log10(this._lumen);
 	}
 	attach(parent)
 	{
@@ -38,7 +47,7 @@ class StarWord
 	}
 	changeLumen(lumen)
 	{
-		this.lumen = lumen;
+		this._lumen = lumen;
 	}
 }
 

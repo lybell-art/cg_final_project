@@ -1,7 +1,35 @@
-import { StarWord } from './star.js';
+import * as THREE from '/libs/three.module.js';
+
+import { CelestalSphere, StarWord } from './star.js';
 
 const socket = io();
-const starList={};
+
+
+//scene & renderer
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 1800);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+
+//objects
+const celestalSphere = new CelestalSphere();
+
+function init()
+{
+	camera.position.set(0, 400, -500);
+
+	scene.background = new THREE.Color(0x000000);
+
+	//renderer setting
+	renderer.setPixelRatio( window.devicePixelRatio );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+
+	const container = document.getElementById("canvas");
+	container.appendChild( renderer.domElement );
+}
+
+
+
+//socket 
 
 socket.on('initialize_star', function(db){
 	for(let i=0;i<db.length;i++)

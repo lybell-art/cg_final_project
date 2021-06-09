@@ -1,0 +1,28 @@
+{
+  "name": "cg_final_project",
+  "version": "0.0.1",
+  "description": "A&T Computer Graphics Final Project-the star of poem",
+  "main": "index.js",
+  "scripts": {
+    "test": "yeeeeaaaah!!!"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lybell-art/cg_final_project.git"
+  },
+  "keywords": [
+    "poem",
+    "3d",
+    "interactive"
+  ],
+  "author": "lybell",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lybell-art/cg_final_project/issues"
+  },
+  "homepage": "https://github.com/lybell-art/cg_final_project#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^4.1.2"
+  }
+}

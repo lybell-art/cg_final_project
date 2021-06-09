@@ -1,6 +1,6 @@
 <!DOCTYPE html> <html>
 <head>
-	<title>우리들의 별</title>
+	<title>우리들의 별-모바일</title>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	<style>
@@ -17,10 +17,14 @@
 			<p>This page uses javascript. Please enable javascript in your browser settings and reflesh the page.</p>
 		</div>
     </noscript>
-	<p>Hello, world!</p>
+	<div id="canvas"></div>
+	<div id="input_star">
+		<input id="my_star" type="text" />
+		<div id="test_button">Submit</div>
+	</div>
 	<div id="log">Log : </div>
 
 	<script src="js/libraries/socket.io.min.js"></script>
-	<script type="module" src="js/pc.js"></script>
+	<script type="module" src="js/mobile.js"></script>
 </body>
 </html>

@@ -23,6 +23,8 @@
   "homepage": "https://github.com/lybell-art/cg_final_project#readme",
   "dependencies": {
     "express": "^4.17.1",
-    "socket.io": "^4.1.2"
+    "mobile-detect": "^1.4.5",
+    "socket.io": "^4.1.2",
+    "socket.io-client": "^4.1.2"
   }
 }

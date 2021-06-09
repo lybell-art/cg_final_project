@@ -1,9 +1,47 @@
-var express = require('express'); 
-var app = express(); //express를 실행하여 app object를 초기화 합니다.
+const express = require('express');
+const MobileDetect=require('mobile-detect');
+const app = express();
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
 
-app.use(express.static(__dirname + "/public")); // 경로/public route를 static 지점으로 설정합니다?
+//initialize app
+app.use(express.static('public'));
 
-var port = 3000; // 사용할 포트 번호를 port 변수에 넣습니다. 
-app.listen(port, function(){ // port변수를 이용하여 3000번 포트에 node.js 서버를 연결합니다.
-  console.log('server on! http://localhost:'+port); //서버가 실행되면 콘솔창에 표시될 메세지입니다.
+app.get("/",(req,res)=>{
+  //mobile page redirection
+  let md=new MobileDetect(req.headers['user-agent']);
+  let isMobile=Boolean(md.os());
+  console.log(isMobile);
+  if(isMobile) res.redirect("/mobile");
+
+  res.sendFile("index.html", { root: __dirname+"/public" });
+});
+
+app.get("/mobile",(req,res)=>{
+  res.sendFile("mobile.html", { root: __dirname+"/public" });
+});
+
+
+//socket
+
+io.on('connection', function(socket){
+  console.log('user connected: ', socket.id);
+
+  socket.on('disconnect', function(){
+    console.log('user disconnected: ', socket.id);
+  });
+
+
+  socket.on('launch_star', function(text){
+    console.log(text);
+    io.emit('broadcast_star', text);
+  });
+
+});
+
+
+
+let port = 3000;
+http.listen(port, function(){ 
+  console.log('server on! http://localhost:'+port);
 });

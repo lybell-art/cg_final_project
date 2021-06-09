@@ -2,3 +2,31 @@ p{
 	font-family: Noto Serif KR, Georgia, serif;
 	color: #24adaf;
 }
+
+.container{
+	width: 100%;
+	height: 100%;
+
+	display: -webkit-box;
+	display: -moz-box;
+	display: box;
+
+	-webkit-box-orient: horizontal;
+	-moz-box-orient: horizontal;
+	box-orient: horizontal;
+
+	-webkit-box-pack: center;
+	-moz-box-pack: center;
+	box-pack: center;
+
+	-webkit-box-align: center;
+	-moz-box-align: center;
+	box-align: center;
+}
+
+#test_button{
+	width: 100px;
+	height: 50px;
+	background-color: #ff0000;
+	color: #ffffff;
+}

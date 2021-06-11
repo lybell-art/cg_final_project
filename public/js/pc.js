@@ -3,6 +3,7 @@ import { EffectComposer } from './libs/plugins/EffectComposer.js';
 import { RenderPass } from './libs/plugins/RenderPass.js';
 import { ShaderPass } from './libs/plugins/ShaderPass.js'
 import { UnrealBloomPass } from './libs/plugins/UnrealBloomPass.js';
+import { SMAAPass } from './libs/plugins/SMAAPass.js';
 
 
 import { geolocation, initCommon, getMouseSphereLocation } from './common.js';
@@ -21,10 +22,11 @@ const container = document.getElementById("canvas");
 const celestalSphere = new CelestalSphere(scene);
 const starParticle = new StarParticle();
 const shooters = [], generatingStarWords = [];
+let starLines
 let earth=null;
 
 //controller
-let isMousePressed=false;
+let isMousePressed=false, isRightMousePressed=false;
 let mousePos=new THREE.Vector2();
 let pickedStar=null;
 
@@ -87,6 +89,83 @@ class wordShooter
 	}
 }
 
+class StarLines
+{
+	static material = new THREE.LineBasicMaterial({color: 0xffefac});
+	constructor(parent)
+	{
+		this.lines=[];
+		this.startPos = new THREE.Vector3();
+		let geometry = new THREE.BufferGeometry();
+		geometry.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array(2 * 3), 3 ) );
+
+		this.currentLine=new THREE.Line( geometry, StarLines.material );
+		this.currentLine.layers.enable(1);
+		this.currentLine.visible=false;
+		this.parent = parent;
+		this.isDrawing=false;
+		parent.add(this.currentLine);
+	}
+	initDraw(pos, mousePos)
+	{
+		this.startPos.copy(pos);
+
+		let lineVert = this.currentLine.geometry.attributes.position.array;
+		lineVert[0]=pos.x;
+		lineVert[1]=pos.y;
+		lineVert[2]=pos.z;
+		lineVert[3]=mousePos.x;
+		lineVert[4]=mousePos.y;
+		lineVert[5]=mousePos.z;
+		this.currentLine.geometry.attributes.position.needsUpdate = true;
+		this.currentLine.visible=true;
+
+		this.isDrawing=true;
+	}
+	moveCursor(pos)
+	{
+		if(!this.isDrawing) return;
+
+		let lineVert = this.currentLine.geometry.attributes.position.array;
+		lineVert[3]=pos.x;
+		lineVert[4]=pos.y;
+		lineVert[5]=pos.z;
+		this.currentLine.geometry.attributes.position.needsUpdate = true;
+	}
+	fixLine(pos)
+	{
+		if(!this.isDrawing) return false;
+		if(pos.equals(this.startPos)) return false;
+		this.moveCursor(pos);
+
+		let geometry = new THREE.BufferGeometry();
+		let posArr = [this.startPos.x, this.startPos.y, this.startPos.z, pos.x, pos.y, pos.z];
+		geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( posArr, 3 ) );
+
+		const newLine=new THREE.Line( geometry, StarLines.material );
+		newLine.layers.enable(1);
+		this.lines.push(newLine);
+		this.parent.add(newLine);
+
+		this.isDrawing=false;
+		return true;
+	}
+	endDraw()
+	{
+		this.currentLine.visible=false;
+		this.currentLine.geometry.attributes.position.needsUpdate = true;
+		this.isDrawing=false;
+	}
+	clearAllLines()
+	{
+		this.endDraw();
+		this.tempVertexes=[];
+		for(let i=0;i<this.lines.length;i++)
+		{
+			scene.remove(this.lines[i]);
+		}
+	}
+}
 
 //glow postprocessing
 //(source : https://github.com/mrdoob/three.js/blob/master/examples/webgl_postprocessing_unreal_bloom_selective.html)
@@ -149,8 +228,12 @@ function initPostProcessing()
 	);
 	finalPass.needsSwap = true;
 
+	const smaaPass = new SMAAPass( window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio() );
+
 	finalComposer.addPass( renderScene );
+	finalComposer.addPass( smaaPass );
 	finalComposer.addPass( finalPass );
+
 
 	bloomComposer.setSize( window.innerWidth, window.innerHeight );
 	finalComposer.setSize( window.innerWidth, window.innerHeight );
@@ -166,6 +249,8 @@ function init()
 	starParticle.attach(celestalSphere.hull);
 
 	initCommon(scene);
+	starLines=new StarLines(celestalSphere.hull);
+
 	testBall();
 
 
@@ -247,10 +332,30 @@ function onWindowResize() {
 
 function onMousePressStart(e)
 {
-	isMousePressed=true;
-	pickedStar=celestalSphere.pickStar(camera, mousePos);
+	let isRightButton;
+	if ("which" in e)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
+		isRightButton = e.which == 3; 
+	else if ("button" in e)  // IE, Opera 
+		isRightButton = e.button == 2; 
 
-	shooters.push(new wordShooter("test", 45, geolocation, 1));
+	if(isRightButton) isRightMousePressed=true;
+	else isMousePressed=true;
+
+	let _pickedStar = celestalSphere.pickStar(camera, mousePos);
+	if(isMousePressed) pickedStar=_pickedStar;
+	else
+	{
+		console.log("right Mouse Pressed!");
+		if(_pickedStar != null)
+		{
+			let mouseSpherePos = getMouseSphereLocation(camera, mousePos, 800);
+			mouseSpherePos.applyMatrix4(celestalSphere.invMatrix);
+
+			starLines.initDraw(_pickedStar.obj.position, mouseSpherePos);
+		}
+	}
+
+//	shooters.push(new wordShooter("test", 45, geolocation, 1));
 //	right click interaction
 }
 
@@ -260,10 +365,24 @@ function onMouseDrag(e)
 	mousePos.x = e.clientX - window.innerWidth /2;
 	mousePos.y = -(e.clientY - window.innerHeight/2);
 
-	if(isMousePressed) //dragging
+	if(isMousePressed) //left mouse dragging
 	{
 		if(pickedStar != null) celestalSphere.dragStar(pickedStar.obj, camera, mousePos, pickedStar.mouseDist);
 		else celestalSphere.rotate(delta.x / 5, delta.y / 5);
+	}
+	if(isRightMousePressed) // right mouse dragging
+	{
+		let _pickedStar = celestalSphere.pickStar(camera, mousePos);
+		let mouseSpherePos = getMouseSphereLocation(camera, mousePos, 800);
+		mouseSpherePos.applyMatrix4(celestalSphere.invMatrix);
+
+		if(_pickedStar != null)
+		{
+			let isFixed=starLines.fixLine(_pickedStar.obj.position);
+			if(isFixed) starLines.initDraw(_pickedStar.obj.position, mouseSpherePos);
+		}
+
+		starLines.moveCursor(mouseSpherePos);
 	}
 
 	//debug cursor
@@ -273,7 +392,19 @@ function onMouseDrag(e)
 
 function onMousePressEnd(e)
 {
-	isMousePressed=false;
+	let isRightButton;
+	if ("which" in e)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
+		isRightButton = e.which == 3; 
+	else if ("button" in e)  // IE, Opera 
+		isRightButton = e.button == 2; 
+
+	if(isRightButton)
+	{
+		starLines.endDraw();
+		isRightMousePressed=false;
+	}
+	else isMousePressed=false;
+
 	pickedStar=null;
 }
 

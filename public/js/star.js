@@ -89,19 +89,18 @@ class StarWord
 	{
 		this.word=word;
 		this._lumen=lumen;
-		this.dist = Math.random()*200+600;
 
-		const position=new THREE.Vector3().random();
+		const position=new THREE.Vector3();
 		if(pos instanceof THREE.Vector3)
 		{
 			position.copy(pos);
 		}
 		else
 		{
-			position.normalize();
-			position.multiplyScalar(this.dist);
+			const posArr=spreadToSphere(600, 800);
+			position.fromArray(posArr);
 		}
-
+		this.dist=position.length();
 
 		const texData= makeTextMaterial(word, "#ffefac");
 		this.texture = texData.tex;

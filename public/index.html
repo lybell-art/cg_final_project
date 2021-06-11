@@ -17,7 +17,20 @@
 			<p>This page uses javascript. Please enable javascript in your browser settings and reflesh the page.</p>
 		</div>
     </noscript>
-    <div id="canvas" oncontextmenu="return false"></div>
+    <div id="canvas" oncontextmenu="return false">
+    	
+	    <div id="buttons">
+		    <div id="sound_button">
+		    	<img id="unmute" class="invisible" src="assets/sound.png" />
+		    	<img id="mute" src="assets/mute.png" />
+		    </div>
+		    <div id="screenshot_button">
+		    	<img src="assets/screenshot.png" />
+		    </div>
+		</div>
+    </div>
+
+
 
 	<script src="js/libs/socket.io.min.js"></script>
 	<script type="module" src="js/pc.js"></script>

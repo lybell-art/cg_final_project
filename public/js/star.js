@@ -473,8 +473,6 @@ function makeTextMaterial(text, color)
 	context.fillStyle=color;
 	context.fillText(text, 0, fontSize);
 
-	document.body.appendChild(canvas);
-
 	const texture=new THREE.Texture(canvas);
 	texture.needsUpdate = true;
 	return {tex:texture, width:canvas.width/5, height:canvas.height/5};

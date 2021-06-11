@@ -231,8 +231,8 @@ function initPostProcessing()
 	const smaaPass = new SMAAPass( window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio() );
 
 	finalComposer.addPass( renderScene );
-	finalComposer.addPass( smaaPass );
 	finalComposer.addPass( finalPass );
+//	finalComposer.addPass( smaaPass );
 
 
 	bloomComposer.setSize( window.innerWidth, window.innerHeight );
@@ -317,6 +317,9 @@ function setEventListeners()
 	container.addEventListener('mousedown', onMousePressStart);
 	container.addEventListener('mousemove', onMouseDrag);
 	container.addEventListener('mouseup', onMousePressEnd);
+
+	let button2=document.getElementById('screenshot_button');
+	button2.addEventListener('mousedown', saveScreenshot);
 }
 
 //dom event
@@ -406,6 +409,22 @@ function onMousePressEnd(e)
 	else isMousePressed=false;
 
 	pickedStar=null;
+}
+
+function saveScreenshot()
+{
+	isMousePressed=false;
+	isRightMousePressed=false;
+
+	renderer.preserveDrawingBuffer = true;
+	render();
+	let img=renderer.domElement.toDataURL('image/png');
+	console.log(renderer.domElement);
+	const virtualLink=document.createElement('a');
+	virtualLink.href=img;
+	virtualLink.download='Our Own Stars';
+	virtualLink.click();
+	renderer.preserveDrawingBuffer = false;
 }
 
 

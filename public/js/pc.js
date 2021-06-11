@@ -1,7 +1,13 @@
 import * as THREE from './libs/three.module.js';
+import { EffectComposer } from './libs/plugins/EffectComposer.js';
+import { RenderPass } from './libs/plugins/RenderPass.js';
+import { ShaderPass } from './libs/plugins/ShaderPass.js'
+import { UnrealBloomPass } from './libs/plugins/UnrealBloomPass.js';
+
 
 import { geolocation, initCommon, getMouseSphereLocation } from './common.js';
 import { CelestalSphere, StarWord, StarParticle, LaunchParticle } from './star.js';
+
 
 const socket = io();
 
@@ -26,6 +32,14 @@ let testsphere;
 
 const clock = new THREE.Clock();
 
+//postprocessing
+const darkMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } ); //for avoiding overlay
+const storedMaterials = {};
+
+const bloomLayer = new THREE.Layers();
+bloomLayer.set( 1 );
+const bloomComposer = new EffectComposer( renderer );
+const finalComposer = new EffectComposer( renderer );
 
 function testBall()
 {
@@ -74,6 +88,75 @@ class wordShooter
 }
 
 
+//glow postprocessing
+//(source : https://github.com/mrdoob/three.js/blob/master/examples/webgl_postprocessing_unreal_bloom_selective.html)
+
+const composedShader = {
+	vertexShader:`
+		varying vec2 vUv;
+		void main() {
+			vUv = uv;
+			gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+		}
+	`,
+	fragmentShader:`
+		uniform sampler2D baseTexture;
+		uniform sampler2D bloomTexture;
+		varying vec2 vUv;
+		void main() {
+			gl_FragColor = ( texture2D( baseTexture, vUv ) + vec4( 1.0 ) * texture2D( bloomTexture, vUv ) );
+		}
+	`
+}
+
+function darkenNonBloomed( obj ) {
+	if ( obj.isMesh && bloomLayer.test( obj.layers ) === false ) {
+		storedMaterials[ obj.uuid ] = obj.material;
+		obj.material = darkMaterial;
+	}
+}
+
+function restoreMaterial( obj ) {
+	if ( storedMaterials[ obj.uuid ] ) {
+		obj.material = storedMaterials[ obj.uuid ];
+		delete storedMaterials[ obj.uuid ];
+	}
+}
+
+function initPostProcessing()
+{
+	const renderScene = new RenderPass( scene, camera );
+
+	const bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
+	bloomPass.threshold = 0;
+	bloomPass.strength = 1.5;
+	bloomPass.radius = 0;
+
+	bloomComposer.renderToScreen = false;
+	bloomComposer.addPass( renderScene );
+	bloomComposer.addPass( bloomPass );
+
+	const finalPass = new ShaderPass(
+		new THREE.ShaderMaterial( {
+			uniforms: {
+				baseTexture: { value: null },
+				bloomTexture: { value: bloomComposer.renderTarget2.texture }
+			},
+			vertexShader: composedShader.vertexShader,
+			fragmentShader: composedShader.fragmentShader,
+			defines: {}
+		} ), "baseTexture"
+	);
+	finalPass.needsSwap = true;
+
+	finalComposer.addPass( renderScene );
+	finalComposer.addPass( finalPass );
+
+	bloomComposer.setSize( window.innerWidth, window.innerHeight );
+	finalComposer.setSize( window.innerWidth, window.innerHeight );
+}
+
+
 function init()
 {
 	camera.position.set(0, 160, 450);
@@ -85,9 +168,11 @@ function init()
 	initCommon(scene);
 	testBall();
 
+
 	//renderer setting
 	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( window.innerWidth, window.innerHeight );
+	initPostProcessing();
 
 	container.appendChild( renderer.domElement );
 
@@ -130,7 +215,10 @@ function animate()
 }
 function render()
 {
-	renderer.render( scene, camera);
+	scene.traverse( darkenNonBloomed );
+	bloomComposer.render();
+	scene.traverse( restoreMaterial );
+	finalComposer.render();
 }
 init();
 animate();
@@ -153,6 +241,8 @@ function onWindowResize() {
 	camera.updateProjectionMatrix();
 
 	renderer.setSize( window.innerWidth, window.innerHeight );
+	bloomComposer.setSize( window.innerWidth, window.innerHeight );
+	finalComposer.setSize( window.innerWidth, window.innerHeight );
 }
 
 function onMousePressStart(e)
@@ -160,7 +250,7 @@ function onMousePressStart(e)
 	isMousePressed=true;
 	pickedStar=celestalSphere.pickStar(camera, mousePos);
 
-//	shooters.push(new wordShooter("test", 45, geolocation, 1));
+	shooters.push(new wordShooter("test", 45, geolocation, 1));
 //	right click interaction
 }
 

@@ -1,5 +1,4 @@
 import * as THREE from './libs/three.module.js';
-import { UnrealBloomPass } from './libs/plugins/UnrealBloomPass.js';
 
 import { getMouseSphereLocation } from './common.js';
 
@@ -8,11 +7,9 @@ class CelestalSphere
 	constructor(parent)
 	{
 		this.hull=new THREE.Group();
-//		this.hull.rotation.order = 'YXZ';
 
 		this.stars={};
 		parent.add(this.hull);
-		this.hull.layers.enable(1); //bloom
 	}
 	get matrix()
 	{
@@ -71,7 +68,6 @@ class CelestalSphere
 				short.dist = distZ;
 			}
 		}
-		console.log(short);
 		if(short.obj == null) return null;
 		return short;
 	}
@@ -107,7 +103,7 @@ class StarWord
 		}
 
 
-		const texData= makeTextMaterial(word, "#ffffff");
+		const texData= makeTextMaterial(word, "#ffefac");
 		this.texture = texData.tex;
 		this.material=new THREE.SpriteMaterial({
 			map:this.texture, 
@@ -128,6 +124,7 @@ class StarWord
 		this.mesh = new THREE.Sprite(this.material);
 		this.mesh.position.copy(position);
 		this.mesh.scale.set(texData.width * this.lumen, texData.height* this.lumen, 1.0);
+		this.mesh.layers.enable(1); //bloom
 
 		this.isTransition=transition;
 		this.material.opacity=(transition) ? 0.0 : 1.0;
@@ -220,8 +217,11 @@ class StarParticle
 			vertexShader: shader.vertexShader,
 			uniforms: THREE.UniformsUtils.clone( shader.uniforms )
 		} );
+		material.uniforms['color'].value=new THREE.Color( 0xbb80bb );
 
 		this.hull = new THREE.Points( this.geometry, material );
+		this.hull.opacity = 0.5;
+		this.hull.layers.enable(1); //bloom
 	}
 	attach(parent)
 	{
@@ -235,6 +235,7 @@ class StarParticle
 			sizes[i] = 10 * (0.5 + Math.pow(Math.sin(x), 3.0) * Math.sin(x+1.3) * 2.0);
 		}
 		this.hull.geometry.attributes.scale.needsUpdate = true;
+		this.hull.material.uniforms['color'].value = new THREE.Color().setHSL((time * 0.2) % 1.0, 1.0, 0.8);
 	}
 }
 
@@ -305,7 +306,7 @@ class LaunchParticle
 			this.particles.push(new Particle());
 			for(let j=0;j<3;j++) positions.push(0.0);
 
-			sizes.push( 5 );
+			sizes.push( 2 );
 			alphas.push( 1.0 );
 			alives.push( 0.0 );
 
@@ -327,6 +328,7 @@ class LaunchParticle
 		material.uniforms['color'].value=new THREE.Color( 0xffffcc );
 
 		this.hull = new THREE.Points( this.geometry, material );
+		this.hull.layers.enable(1); //bloom
 
 		this.newParticleAge=0.0;
 		this.pendingDeath=false;
@@ -539,33 +541,3 @@ const pointShader = {
 
 
 export { CelestalSphere, StarWord, StarParticle, LaunchParticle };
-
-
-
-/*
-
-
-const renderScene = new RenderPass( scene, camera );
-
-const bloomComposer = new EffectComposer( renderer );
-bloomComposer.renderToScreen = false;
-bloomComposer.addPass( renderScene );
-bloomComposer.addPass( bloomPass );
-
-const finalPass = new ShaderPass(
-	new THREE.ShaderMaterial( {
-		uniforms: {
-			baseTexture: { value: null },
-			bloomTexture: { value: bloomComposer.renderTarget2.texture }
-		},
-		vertexShader: document.getElementById( 'vertexshader' ).textContent,
-		fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
-		defines: {}
-	} ), "baseTexture"
-);
-finalPass.needsSwap = true;
-
-const finalComposer = new EffectComposer( renderer );
-finalComposer.addPass( renderScene );
-finalComposer.addPass( finalPass );
-*/

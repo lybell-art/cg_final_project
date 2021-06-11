@@ -33,7 +33,7 @@ function loadDB()
   });
 }
 
-function addDB(data)
+function addDB(data, callback)
 {
   starModel.findOne({word:data}, function(err, res){
     if(err) {console.log("Error!", err); return;}
@@ -54,8 +54,8 @@ function addDB(data)
         {new : true},
         (err, c)=>{});
     }
-
-    io.emit('broadcast_star', data, lumen);
+    callback(data, lumen);
+//    io.emit('broadcast_star', data, lumen);
   });
 }
 
@@ -93,10 +93,11 @@ io.on('connection', function(socket){
   });
 
 
-  socket.on('launch_star', function(text){
-    console.log(text);
-    addDB(text);
-//    io.emit('broadcast_star', text);
+  socket.on('launch_star', function(text, gyro, loc){
+    console.log(text, gyro, loc);
+    addDB(text, function(text, lumen){
+      io.emit('broadcast_star', text, gyro, loc, lumen);
+    });
   });
 
 });

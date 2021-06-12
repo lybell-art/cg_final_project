@@ -1,8 +1,9 @@
 import * as THREE from './libs/three.module.js';
 import { MTLLoader } from './libs/plugins/MTLLoader.js';
 import { OBJLoader } from './libs/plugins/OBJLoader.js';
+import { Bezier }  from './libs/bezierEasing.js';
 
-import { geolocation, initCommon, getMouseSphereLocation, myLoadingComplete } from './common.js';
+import { geolocation, initCommon, getMouseSphereLocation, myLoadingComplete, bgm, isLoaded } from './common.js';
 import { CelestalSphere, StarWord, StarParticle } from './star.js';
 
 const socket = io();
@@ -16,9 +17,15 @@ const container = document.getElementById("canvas");
 const celestalSphere = new CelestalSphere(scene);
 const starParticle = new StarParticle();
 let cannonGroup = new THREE.Group();
+let cameraMover;
 
 //controller
-const gyro = 90.0;
+let gyro = 90.0;
+const canGyroSensor = !!window.DeviceOrientationEvent;
+
+//dom controller
+let viewingContent = 0;
+let introViewingCount = 0;
 
 const clock = new THREE.Clock();
 
@@ -28,10 +35,10 @@ function initCannonLauncher(loader)
 	const mtlLoader= new MTLLoader(loader);
 	const objLoader= new OBJLoader(loader);
 
-	mtlLoader.load( 'assets/cannon.mtl', function ( materials ) {
+	mtlLoader.load( 'assets/obj/cannon.mtl', function ( materials ) {
 		materials.preload();
 		objLoader.setMaterials( materials );
-		objLoader.load( 'assets/cannon.obj', function ( object ) {
+		objLoader.load( 'assets/obj/cannon.obj', function ( object ) {
 			let cannon=object.children[0];
 			cannon.name="cannon";
 			cannonGroup.add(cannon);
@@ -44,10 +51,10 @@ function initCannonWheel(loader)
 	const mtlLoader= new MTLLoader(loader);
 	const objLoader= new OBJLoader(loader);
 
-	mtlLoader.load( 'assets/cannon_wheel.mtl', function ( materials ) {
+	mtlLoader.load( 'assets/obj/cannon_wheel.mtl', function ( materials ) {
 		materials.preload();
 		objLoader.setMaterials( materials );
-		objLoader.load( 'assets/cannon_wheel.obj', function ( object ) {
+		objLoader.load( 'assets/obj/cannon_wheel.obj', function ( object ) {
 			let cannon_wheel=object.children[0];
 			cannonGroup.add(cannon_wheel);
 		});
@@ -65,44 +72,242 @@ function initCannon(loader)
 
 function rotateCannon(r)
 {
-	const launcher = cannonGroup.getObjectByName("cannon");;
+	const launcher = cannonGroup.getObjectByName("cannon");
 	if(launcher instanceof THREE.Object3D)
 	{
-		console.log(launcher.rotation);
 		launcher.rotation.x = (r - 90)*Math.PI/180;
 	}
 }
 
-/*
-class cameraMover
+const ease=Bezier(0.25, 0.1, 0.25, 1);
+const ease_in=Bezier(0.42, 0.0, 1.0, 1.0);
+const ease_out=Bezier(0.0, 0.0, 0.58, 1.0);
+const ease_inout=Bezier(0.38, 0.0, 0.62, 1);
+
+class CameraMover
 {
+	static LINEAR = 0;
+	static EASE = 1;
+	static EASE_IN = 2;
+	static EASE_OUT = 3;
+	static EASE_INOUT = 4;
+
+	static NO_LERP = 100;
+	static FORWARD = 101;
+	static BACKWARD = 102;
+	static LOOP_LERP = 103;
 	constructor()
 	{
 		this.camera=camera;
 		
 		this.cameraScene=0;
+		this.frame=0;
+		
+		this.isPendingLerp = CameraMover.NO_LERP;
+		this.nextScene = 1;
+
+	}
+	getInterpolation(mode = CameraMover.LINEAR)
+	{
+		let f=THREE.MathUtils.clamp(this.frame, 0, 1);
+		switch(mode)
+		{
+			case CameraMover.EASE: f=ease(f); break;
+			case CameraMover.EASE_IN: f=ease_in(f); break;
+			case CameraMover.EASE_OUT: f=ease_out(f); break;
+			case CameraMover.EASE_INOUT: f=ease_inout(f); break;
+		}
+		return f;
+	}
+	lerp(s, e, f)
+	{
+		return s + f*(e-s);
+	}
+	lerpVector(start, end, mode = CameraMover.LINEAR)
+	{
+		let v=this.getInterpolation(mode);
+		const lerp=(s, e, f)=>s + f*(e-s);
+		const res = [0,0,0];
+		for(let i=0; i<3; i++)
+		{
+			res[i]=lerp(start[i], end[i], v);
+		}
+
+		return new THREE.Vector3().fromArray(res);
+	}
+	lerpAngle(start, end, mode = CameraMover.LINEAR)
+	{
+		let v=this.getInterpolation(mode);
+		const lerp=(s, e, f)=>s + f*(e-s);
+		return -lerp(start, end, v);
 	}
 	move()
 	{
+		let res;
+		let r;
 		switch(this.cameraScene)
 		{
-			case 0:
+			case 0: //start
+				res=this.lerpVector([0, 160, 800], [0, 160, 300], CameraMover.EASE);
+				this.camera.position.copy(res);
+				break;
+			case 1: //idle
+				r=this.lerpAngle(0, Math.PI*2, CameraMover.LINEAR);
+				res = new THREE.Vector3(0, 160, 300);
+				res.applyAxisAngle(new THREE.Vector3(1,0,0), r);
+				this.camera.position.copy(res);
+				this.camera.rotation.x=r;
+				break;
+			case 2: //input text 
+				res=this.lerpVector([0, 160, 300], [0, 190, 160], CameraMover.EASE);
+				r = this.lerpAngle(0, Math.PI/12, CameraMover.EASE);
+				this.camera.rotation.x=r;
+				this.camera.position.copy(res);
+				break;
+			case 3: //launch 
+				res=this.lerpVector([0, 190, 160], [0, 140, 130], CameraMover.EASE);
+				r = this.lerpAngle(Math.PI/12, 0, CameraMover.EASE);
+				this.camera.rotation.x=r;
+				this.camera.position.copy(res);
+				break;
 		}
 	}
-}*/
+	frameForward(delta)
+	{
+		const speed=[0.5, 0.01, 1.0, 1.0, 1.0, 1.0];
+
+		if(this.isPendingLerp == CameraMover.FORWARD) this.frame += 10 * delta * speed[this.cameraScene];
+		else if(this.isPendingLerp == CameraMover.BACKWARD) this.frame -=  10 * delta * speed[this.cameraScene];
+		else this.frame += speed[this.cameraScene]* delta;
+
+		let isLerpEnded=false;
+		switch(this.isPendingLerp)
+		{
+			case CameraMover.NO_LERP:
+				if(this.frame >= 1.0)
+				{
+					this.frame = 1.0;
+					isLerpEnded=true;
+				}
+				break;
+			case CameraMover.FORWARD:
+				if(this.frame >= 1.0)
+				{
+					this.frame = 0.0;
+					this.cameraScene = this.nextScene;
+					this.isPendingLerp = CameraMover.NO_LERP;
+					isLerpEnded=true;
+				}
+				break;
+			case CameraMover.BACKWARD:
+				if(this.frame <= 0.0)
+				{
+					this.frame = 0.0;
+					this.cameraScene = this.nextScene;
+					this.isPendingLerp = CameraMover.NO_LERP;
+					isLerpEnded=true;
+				}
+				break;
+			case CameraMover.LOOP_LERP:
+				if(this.frame >= 1.0) this.frame -= 1.0;
+				break;
+		}
+		return isLerpEnded;
+	}
+	update(delta)
+	{
+		let isLerpEnded=this.frameForward(delta);
+		this.move();
+		if(isLerpEnded)
+		{
+			switch(this.cameraScene)
+			{
+				case 0:
+					this.callScene(1, CameraMover.LOOP_LERP); break;
+			}
+		}
+	}
+	callScene(scene, lerpMode=CameraMover.NO_LERP)
+	{
+		this.isPendingLerp=lerpMode;
+		this.nextScene = scene;
+		if(lerpMode == CameraMover.NO_LERP || lerpMode == CameraMover.LOOP_LERP )
+		{
+			this.frame=0;
+			this.cameraScene = scene;
+			return;
+		}
+	}
+}
+
+//dom contents view
+
+function showContents(i)
+{
+	if(viewingContent == i) return;
+	else if(viewingContent != 0 ) hideContents(i);
+
+	let id=((i>=3) ? "mov_" : "") + "page"+i;
+	const content=document.getElementById(id);
+	if(content == null) return;
+	content.classList.remove("hidden");
+	viewingContent=i;
+}
+
+function hideContents(i)
+{
+	let id=((i>=3) ? "mov_" : "") + "page"+i;
+	const content=document.getElementById(id);
+	if(content == null) return;
+	content.classList.add("hidden");
+	viewingContent=0;
+}
+
+function introView(time)
+{
+	if(introViewingCount == 0 && time>1)
+	{
+		showContents(1);
+		introViewingCount++;
+	}
+	else if(introViewingCount == 1 && time>3.5)
+	{
+		hideContents(1);
+		introViewingCount++;
+	}
+	else if(introViewingCount == 2 && time>5.5)
+	{
+		showContents(2);
+		introViewingCount++;
+	}
+	else if(introViewingCount == 3 && time>8)
+	{
+		hideContents(2);
+		introViewingCount++;
+	}
+	else if(introViewingCount == 4 && time>10)
+	{
+		showContents(3);
+		introViewingCount++;
+	}
+}
 
 function init()
 {
-	camera.position.set(0, 160, 300);
+//	camera.position.set(0, 160, 800);
+	cameraMover=new CameraMover(camera);
+	cameraMover.update(0);
 
 	scene.background = new THREE.Color(0x000000);
 
 	starParticle.attach(celestalSphere.hull);
 
-	const loader=new THREE.LoadingManager(myLoadingComplete);
+	const loader=new THREE.LoadingManager(function()
+		{
+			myLoadingComplete();
+			clock.start();
+		});
 	initCommon(scene, loader);
-//const ambient = new THREE.AmbientLight( 0xcccccc ); // soft white light
-//	scene.add( ambient );
 	initCannon(loader);
 
 	//renderer setting
@@ -112,7 +317,6 @@ function init()
 	container.appendChild( renderer.domElement );
 
 	setEventListeners();
-	console.log(geolocation);
 }
 function animate()
 {
@@ -120,6 +324,11 @@ function animate()
 	const deltaTime = Math.min( 0.1, clock.getDelta() );
 	const elapsedTime = clock.getElapsedTime();
 	starParticle.twinkle(elapsedTime * 0.5);
+	if(isLoaded)
+	{
+		cameraMover.update(deltaTime);
+		if(introViewingCount < 5) introView(elapsedTime);
+	}
 //	rotateCannon(elapsedTime * 10);
 	render();
 }
@@ -135,6 +344,16 @@ animate();
 function setEventListeners()
 {
 	window.addEventListener( 'resize', onWindowResize );
+	window.addEventListener('focus', bgmReplay);
+	window.addEventListener('blur', bgmPause);
+	window.addEventListener('touchstart', (e)=>{socket.emit('debug', !!window.DeviceOrientationEvent);})
+
+	window.addEventListener('keydown',(e)=>
+	{
+		if(e.key == "2") cameraMover.callScene(2, CameraMover.BACKWARD);
+		if(e.key == "3") cameraMover.callScene(3, CameraMover.FORWARD);
+	});
+
 }
 
 //dom event
@@ -146,6 +365,17 @@ function onWindowResize() {
 	renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
+function bgmPause()
+{
+	if(!bgm.isPlaying) return;
+	bgm.pause();
+}
+
+function bgmReplay()
+{
+	if(bgm.isPlaying) return;
+	bgm.play();
+}
 
 
 
@@ -153,6 +383,8 @@ function onWindowResize() {
 function updateAngle(e)
 {
 	gyro=e.beta;
+	rotateCannon(gyro);
+	socket.emit('debug', gyro);
 }
 
 function launch_star(e)
@@ -172,6 +404,6 @@ socket.on('initialize_star', function(db){
 	}
 });
 
-document.getElementById("test_button").addEventListener('click',launch_star);
+//document.getElementById("test_button").addEventListener('click',launch_star);
 
-window.addEventListener("deviceOrientation", updateAngle);
+window.addEventListener("deviceorientation", updateAngle);

@@ -258,14 +258,14 @@ class Particle
 	{
 		return this.age < 1.0;
 	}
-	initialize(pos, dir)
+	initialize(pos, dir, speed, zitter)
 	{
 		this.position=pos.clone();
 		this.direction=dir.clone().negate().normalize();
-		this.direction.x+=Math.random()*0.3 - 0.15;
-		this.direction.y+=Math.random()*0.3 - 0.15;
-		this.direction.z+=Math.random()*0.3 - 0.15;
-		this.speed=( 3 + (Math.random() * 2 - 1) ) * 0.5;
+		this.direction.x+=Math.random()*(zitter*2) - zitter;
+		this.direction.y+=Math.random()*(zitter*2) - zitter;
+		this.direction.z+=Math.random()*(zitter*2) - zitter;
+		this.speed= (1 + Math.random() ) * speed;
 		this.age=0.0;
 		this.alive=1.0;
 	}
@@ -289,11 +289,14 @@ class Particle
 class LaunchParticle
 {
 	static amount = 500;
-	constructor(pos, dir, speed, isGravityApplied=true)
+	constructor(pos, dir, _speed=1, _size=2, zitter=0.15, thrustSpeed=4, isGravityApplied=true)
 	{
 		this._position=pos.clone();
 		let _direction=new THREE.Vector3().copy(dir).normalize();
-		this._velocity=_direction.clone().multiplyScalar(speed);
+		this._velocity=_direction.clone().multiplyScalar(thrustSpeed);
+		this.zitter=zitter;
+		this.particleSpeed=_speed;
+
 		this.particles=[];
 		this.isGravityApplied = isGravityApplied;
 
@@ -305,7 +308,7 @@ class LaunchParticle
 			this.particles.push(new Particle());
 			for(let j=0;j<3;j++) positions.push(0.0);
 
-			sizes.push( 2 );
+			sizes.push( _size );
 			alphas.push( 1.0 );
 			alives.push( 0.0 );
 
@@ -344,6 +347,7 @@ class LaunchParticle
 	get direction()
 	{
 		let vel=this._velocity.clone();
+		if(this.speed < 0.1) return new THREE.Vector3(0,0,0);
 		return vel.normalize();
 	}
 	set position(e)
@@ -360,8 +364,8 @@ class LaunchParticle
 		if(this.pendingDeath) return;
 
 		let prePos=this.position;
-		this.position = newPos;
-		this.velocity = newPos.clone().sub(prePos);
+		this._position.copy(newPos);
+		this._velocity = newPos.clone().sub(prePos);
 	}
 	thrust()
 	{
@@ -419,7 +423,7 @@ class LaunchParticle
 			for(let i=0;i<Math.min(5, recyclesIndices.length);i++)
 			{
 				let indice=recyclesIndices[i];
-				this.particles[indice].initialize(this.position, this.direction);
+				this.particles[indice].initialize(this.position, this.direction, this.particleSpeed, this.zitter);
 			}
 			this.newParticleAge -= newParticleInterval;
 		}

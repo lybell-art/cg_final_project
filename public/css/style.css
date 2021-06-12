@@ -123,15 +123,37 @@ p{
 }
 
 
+#input_star {
+	display: none;
+    position: fixed;
+    top: 20%;
+    left: 0px;
+    width: 100%;
+    height: 60%;
+}
 
-
+#my_star {
+    width: 100%;
+    background-color: transparent;
+    border: 0;
+    color: #fff;
+    font-size: 7em;
+    text-align: center;
+    font-family: 'Noto Serif KR';
+    text-shadow: 0 0 10px #fff, 0 0 20px #ffefac;
+}
 
 #test_button{
+	position: relative;
 	z-index: 100;
-	width: 100px;
-	height: 50px;
-	background-color: #ff0000;
+	width: 80px;
+	height: 80px;
+	bottom: 0%;
+	border-radius: 50%;
+	margin: 30% auto 0px auto;
+	background-color: #ffffff;
 	color: #ffffff;
+	box-shadow: 0 0 20px #fff, 0 0 50px #ffefac;
 }
 
 #buttons{
@@ -159,8 +181,80 @@ p{
 	-webkit-user-drag: none;
 	-moz-user-drag: none;
 	user-drag: none;
+	transition: 1s opacity;
 }
 
 .invisible{
 	display: none;
 }
+
+#contents div{
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	user-select: none;
+	-webkit-user-drag: none;
+	-moz-user-drag: none;
+	user-drag: none;
+	transition: 1s opacity;
+}
+
+#contents div.hidden{
+	opacity: 0;
+}
+
+.center-caption {
+    width: 100%;
+    top: 25%;
+    height: 40%;
+    position: absolute;
+    
+
+    display: -webkit-box;
+    display: -moz-box;
+    display: box;
+    -webkit-box-orient: vertical;
+    -moz-box-orient: vertical;
+    box-orient: vertical;
+    -webkit-box-pack: center;
+    -moz-box-pack: center;
+    box-pack: center;
+    -webkit-box-align: center;
+    -moz-box-align: center;
+    box-align: center;
+}
+
+.center-caption p{
+	text-align: center;
+}
+
+
+.center-caption .ko{
+	font-size: 24px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px #fff, 0 0 20px #ffefac;
+}
+
+.center-caption .en{
+	font-size: 12px;
+}
+
+.show{
+	animation:showCaption 5s ease-in-out;
+}
+
+@keyframes showCaption
+{ 
+	from {
+		opacity:0.0;
+	}
+	30%{
+		opacity:1.0;
+	}
+	70%{
+		opacity:1.0;
+	}
+	to {
+		opacity:0.0;
+	}
+}
+

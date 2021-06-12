@@ -6,7 +6,7 @@ import { UnrealBloomPass } from './libs/plugins/UnrealBloomPass.js';
 import { SMAAPass } from './libs/plugins/SMAAPass.js';
 
 
-import { geolocation, initCommon, getMouseSphereLocation, myLoadingComplete } from './common.js';
+import { geolocation, initCommon, getMousePlaneLocation, getMouseSphereLocation, myLoadingComplete, bgm, isLoaded } from './common.js';
 import { CelestalSphere, StarWord, StarParticle, LaunchParticle } from './star.js';
 
 
@@ -28,8 +28,7 @@ let starLines;
 let isMousePressed=false, isRightMousePressed=false;
 let mousePos=new THREE.Vector2();
 let pickedStar=null;
-
-let testsphere;
+let starCursor = null;
 
 const clock = new THREE.Clock();
 
@@ -42,13 +41,10 @@ bloomLayer.set( 1 );
 const bloomComposer = new EffectComposer( renderer );
 const finalComposer = new EffectComposer( renderer );
 
-function testBall()
-{
-	const geometry = new THREE.SphereGeometry( 5, 32, 32 );
-	const material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
-	testsphere = new THREE.Mesh( geometry, material );
-	scene.add( testsphere );
-}
+
+//dom controller
+let viewingContent = 0;
+let introViewingCount = 0;
 
 class wordShooter
 {
@@ -69,7 +65,7 @@ class wordShooter
 		this.lumen=lumen;
 		this.radius=Math.random() * 200 + 600;
 
-		this.particleSystem=new LaunchParticle(startPos, direction,4);
+		this.particleSystem=new LaunchParticle(startPos, direction, 1, 2, 0.15, 4, true);
 		this.particleSystem.attach(scene);
 	}
 	update(delta)
@@ -166,6 +162,30 @@ class StarLines
 	}
 }
 
+
+class StarCursor
+{
+	constructor()
+	{
+		const deg=Math.PI/180;
+		let startPos=new THREE.Vector3(0,160,-350);
+
+		let direction=new THREE.Vector3(0,0,1);
+
+		this.particleSystem=new LaunchParticle(startPos, direction, 0.05, 0.5, 0.7, 1, false);
+		this.particleSystem.attach(scene);
+	}
+	move(mousePos)
+	{
+		let spLoc=getMousePlaneLocation(camera, mousePos, 100);
+		if(spLoc != null) this.particleSystem.moveTo(spLoc);
+	}
+	update(delta)
+	{
+		this.particleSystem.update(delta);
+	}
+}
+
 //glow postprocessing
 //(source : https://github.com/mrdoob/three.js/blob/master/examples/webgl_postprocessing_unreal_bloom_selective.html)
 
@@ -239,6 +259,63 @@ function initPostProcessing()
 }
 
 
+//render dom elements
+function showContents(i)
+{
+	if(viewingContent == i) return;
+	else if(viewingContent != 0 ) hideContents(i);
+
+	let id=((i>=3) ? "pc_" : "") + "page"+i;
+	const content=document.getElementById(id);
+	if(content == null) return;
+	content.classList.remove("hidden");
+	viewingContent=i;
+}
+
+function hideContents(i)
+{
+	let id=((i>=3) ? "pc_" : "") + "page"+i;
+	const content=document.getElementById(id);
+	if(content == null) return;
+	content.classList.add("hidden");
+	viewingContent=0;
+}
+
+function introView(time)
+{
+	if(introViewingCount == 0 && time>1)
+	{
+		showContents(1);
+		introViewingCount++;
+	}
+	else if(introViewingCount == 1 && time>3.5)
+	{
+		hideContents(1);
+		introViewingCount++;
+	}
+	else if(introViewingCount == 2 && time>5.5)
+	{
+		showContents(2);
+		introViewingCount++;
+	}
+	else if(introViewingCount == 3 && time>8)
+	{
+		hideContents(2);
+		introViewingCount++;
+	}
+	else if(introViewingCount == 4 && time>10)
+	{
+		showContents(3);
+		introViewingCount++;
+	}
+	else if(introViewingCount == 5 && time>16)
+	{
+		hideContents(3);
+		introViewingCount++;
+	}
+}
+
+
 function init()
 {
 	camera.position.set(0, 160, 450);
@@ -247,13 +324,15 @@ function init()
 
 	starParticle.attach(celestalSphere.hull);
 
-	const loader=new THREE.LoadingManager(myLoadingComplete);
+	const loader=new THREE.LoadingManager(function()
+		{
+			myLoadingComplete();
+			clock.start();
+		});
 
 	initCommon(scene, loader);
 	starLines=new StarLines(celestalSphere.hull);
-
-	testBall();
-
+	starCursor=new StarCursor();
 
 	//renderer setting
 	renderer.setPixelRatio( window.devicePixelRatio );
@@ -263,7 +342,6 @@ function init()
 	container.appendChild( renderer.domElement );
 
 	setEventListeners();
-	console.log(geolocation);
 }
 function animate()
 {
@@ -297,7 +375,19 @@ function animate()
 	{
 		generatingStarWords.splice(deadStarIndices[j], 1);
 	}
+
+	starCursor.update(deltaTime);
+
+	//dom intro captions
+	if(isLoaded)
+	{
+		if(introViewingCount < 6) introView(elapsedTime);
+	}
+
+
 	render();
+
+
 }
 function render()
 {
@@ -319,8 +409,14 @@ function setEventListeners()
 	container.addEventListener('mousemove', onMouseDrag);
 	container.addEventListener('mouseup', onMousePressEnd);
 
+	let button1=document.getElementById('sound_button');
+	button1.addEventListener('mousedown', bgmToggle);
+
 	let button2=document.getElementById('screenshot_button');
 	button2.addEventListener('mousedown', saveScreenshot);
+
+	window.addEventListener('focus', bgmReplay);
+	window.addEventListener('blur', bgmPause);
 }
 
 //dom event
@@ -359,8 +455,7 @@ function onMousePressStart(e)
 		}
 	}
 
-	console.log(geolocation);
-//	shooters.push(new wordShooter("test", 45, geolocation, 1));
+	shooters.push(new wordShooter("test", 45, geolocation, 1));
 
 }
 
@@ -390,9 +485,7 @@ function onMouseDrag(e)
 		starLines.moveCursor(mouseSpherePos);
 	}
 
-	//debug cursor
-	let spLoc=getMouseSphereLocation(camera, mousePos, 800);
-	if(spLoc != null) testsphere.position.copy(spLoc);
+	starCursor.move(mousePos);
 }
 
 function onMousePressEnd(e)
@@ -413,6 +506,48 @@ function onMousePressEnd(e)
 	pickedStar=null;
 }
 
+function bgmPause()
+{
+	if(!bgm.isPlaying) return;
+	const unmuteButton=document.getElementById('unmute');
+	const muteButton=document.getElementById('mute');
+
+	muteButton.classList.add("invisible");
+	unmuteButton.classList.remove("invisible");
+	bgm.pause();
+}
+
+function bgmReplay()
+{
+	if(bgm.isPlaying) return;
+	const unmuteButton=document.getElementById('unmute');
+	const muteButton=document.getElementById('mute');
+
+	muteButton.classList.remove("invisible");
+	unmuteButton.classList.add("invisible");
+	bgm.play();
+}
+
+
+
+function bgmToggle()
+{
+	const unmuteButton=document.getElementById('unmute');
+	const muteButton=document.getElementById('mute');
+	if(bgm.isPlaying)
+	{
+		muteButton.classList.add("invisible");
+		unmuteButton.classList.remove("invisible");
+		bgm.pause();
+	}
+	else
+	{
+		muteButton.classList.remove("invisible");
+		unmuteButton.classList.add("invisible");
+		bgm.play();
+	}
+}
+
 function saveScreenshot()
 {
 	isMousePressed=false;
@@ -421,7 +556,6 @@ function saveScreenshot()
 	renderer.preserveDrawingBuffer = true;
 	render();
 	let img=renderer.domElement.toDataURL('image/png');
-	console.log(renderer.domElement);
 	const virtualLink=document.createElement('a');
 	virtualLink.href=img;
 	virtualLink.download='Our Own Stars';

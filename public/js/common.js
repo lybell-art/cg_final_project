@@ -4,6 +4,9 @@ import { OBJLoader } from './libs/plugins/OBJLoader.js';
 
 export let geolocation={latitude:null, longitude:null};
 let earth=null;
+let isBGMPlaying=false;
+export let bgm=new THREE.Audio( new THREE.AudioListener );
+export let isLoaded = false;
 
 //get geolocation
 
@@ -43,10 +46,10 @@ function initEarth(scene, loader)
 	const objLoader = new OBJLoader(loader);
 	const mtlLoader = new MTLLoader(loader);
 
-	mtlLoader.load( 'assets/earth.mtl', function ( materials ) {
+	mtlLoader.load( 'assets/obj/earth.mtl', function ( materials ) {
 		materials.preload();
 		objLoader.setMaterials( materials );
-		objLoader.load( 'assets/earth.obj', function ( object ) {
+		objLoader.load( 'assets/obj/earth.obj', function ( object ) {
 			earth=object.children[0];
 			earth.castShadow=true;
 			earth.scale.multiplyScalar(20);
@@ -80,11 +83,41 @@ function initLights(scene)
 	scene.add( ambient );
 }
 
+function initSounds(loader)
+{
+	const audioLoader = new THREE.AudioLoader(loader);
+	audioLoader.load("assets/sound/Shooting Star_Kazumus Sound.mp3", function ( audioBuffer ) {
+		bgm.setBuffer( audioBuffer );
+		bgm.setLoop(true);
+	});
+}
+
+function initBGM()
+{
+	if(!isBGMPlaying) bgm.play();
+	isBGMPlaying=true;
+}
+
 function initCommon(scene, loader=undefined)
 {
 	initGeolocation(loader);
 	initEarth(scene, loader);
 	initLights(scene);
+	initSounds(loader);
+}
+
+function getMousePlaneLocation(camera, mousePos, dist)
+{
+	let pos=camera.position.clone();
+	let dir=new THREE.Vector3();
+
+	let cameraDist = (window.innerHeight/2) / Math.tan(Math.PI * camera.fov/360);
+	dir.x = mousePos.x * dist / cameraDist ;
+	dir.y = mousePos.y * dist / cameraDist;
+	dir.z = -dist;
+
+	pos.add(dir);
+	return pos;
 }
 
 
@@ -120,7 +153,9 @@ function myLoadingComplete()
 {
 	const loadingScreen = document.getElementById( 'loading-screen' );
 	loadingScreen.classList.add( 'fade-out' );
-	loadingScreen.addEventListener( 'transitionend', (e)=>{e.target.remove()} );
+	loadingScreen.addEventListener( 'transitionend', (e)=>{e.target.remove(); isLoaded=true;} );
+
+	window.addEventListener('click',initBGM);
 }
 
-export {rotateEarth, initCommon, getMouseSphereLocation, myLoadingComplete};
+export {rotateEarth, initCommon, getMousePlaneLocation, getMouseSphereLocation, myLoadingComplete};

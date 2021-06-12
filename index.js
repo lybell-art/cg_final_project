@@ -100,6 +100,10 @@ io.on('connection', function(socket){
     });
   });
 
+  socket.on('debug', function(text){
+    console.log(text);
+  });
+
 });
 
 

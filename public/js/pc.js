@@ -6,7 +6,7 @@ import { UnrealBloomPass } from './libs/plugins/UnrealBloomPass.js';
 import { SMAAPass } from './libs/plugins/SMAAPass.js';
 
 
-import { geolocation, initCommon, getMouseSphereLocation } from './common.js';
+import { geolocation, initCommon, getMouseSphereLocation, myLoadingComplete } from './common.js';
 import { CelestalSphere, StarWord, StarParticle, LaunchParticle } from './star.js';
 
 
@@ -22,8 +22,7 @@ const container = document.getElementById("canvas");
 const celestalSphere = new CelestalSphere(scene);
 const starParticle = new StarParticle();
 const shooters = [], generatingStarWords = [];
-let starLines
-let earth=null;
+let starLines;
 
 //controller
 let isMousePressed=false, isRightMousePressed=false;
@@ -248,7 +247,9 @@ function init()
 
 	starParticle.attach(celestalSphere.hull);
 
-	initCommon(scene);
+	const loader=new THREE.LoadingManager(myLoadingComplete);
+
+	initCommon(scene, loader);
 	starLines=new StarLines(celestalSphere.hull);
 
 	testBall();
@@ -346,9 +347,9 @@ function onMousePressStart(e)
 
 	let _pickedStar = celestalSphere.pickStar(camera, mousePos);
 	if(isMousePressed) pickedStar=_pickedStar;
-	else
+	else 
 	{
-		console.log("right Mouse Pressed!");
+		//	right click interaction
 		if(_pickedStar != null)
 		{
 			let mouseSpherePos = getMouseSphereLocation(camera, mousePos, 800);
@@ -358,8 +359,9 @@ function onMousePressStart(e)
 		}
 	}
 
+	console.log(geolocation);
 //	shooters.push(new wordShooter("test", 45, geolocation, 1));
-//	right click interaction
+
 }
 
 function onMouseDrag(e)

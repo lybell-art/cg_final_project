@@ -7,20 +7,44 @@ let earth=null;
 
 //get geolocation
 
-fetch ( 'https://ipapi.co/json/')
-    .then (res => res.json ())
-    .then ((out) => {
-    	geolocation={latitude:null, longitude:null};
-    	geolocation.latitude=out.latitude;
-    	geolocation.longitude=out.longitude;
-    	if(earth != null) rotateEarth(earth, geolocation);
-}). catch (err => console.error (err));
-
-function initEarth(scene)
+function initGeolocation(loader)
 {
-	new MTLLoader().load( 'assets/earth.mtl', function ( materials ) {
+	let url='https://ipapi.co/json/';
+	console.log("geolocation!");
+	if(loader !== undefined)
+	{
+		loader.itemStart( url );
+	}
+
+	fetch ( url )
+	    .then (res => res.json ())
+	    .then ((out) => {
+	    	geolocation={latitude:null, longitude:null};
+	    	geolocation.latitude=out.latitude;
+	    	geolocation.longitude=out.longitude;
+	    	if(earth != null) rotateEarth(earth, geolocation);
+
+	    	if(loader !== undefined) loader.itemEnd(url);
+	}). catch ((err) =>
+	{
+		console.error (err);
+		if(loader !== undefined)
+		{
+			loader.itemError( url );
+			loader.itemEnd( url );
+		}
+	});
+}
+
+
+
+function initEarth(scene, loader)
+{
+	const objLoader = new OBJLoader(loader);
+	const mtlLoader = new MTLLoader(loader);
+
+	mtlLoader.load( 'assets/earth.mtl', function ( materials ) {
 		materials.preload();
-		const objLoader = new OBJLoader();
 		objLoader.setMaterials( materials );
 		objLoader.load( 'assets/earth.obj', function ( object ) {
 			earth=object.children[0];
@@ -56,9 +80,10 @@ function initLights(scene)
 	scene.add( ambient );
 }
 
-function initCommon(scene, earthCallback)
+function initCommon(scene, loader=undefined)
 {
-	initEarth(scene, earthCallback);
+	initGeolocation(loader);
+	initEarth(scene, loader);
 	initLights(scene);
 }
 
@@ -91,4 +116,11 @@ function getMouseSphereLocation(camera, mousePos, radius)
 	}
 }
 
-export {rotateEarth, initCommon, getMouseSphereLocation};
+function myLoadingComplete()
+{
+	const loadingScreen = document.getElementById( 'loading-screen' );
+	loadingScreen.classList.add( 'fade-out' );
+	loadingScreen.addEventListener( 'transitionend', (e)=>{e.target.remove()} );
+}
+
+export {rotateEarth, initCommon, getMouseSphereLocation, myLoadingComplete};

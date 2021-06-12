@@ -1,6 +1,8 @@
 import * as THREE from './libs/three.module.js';
+import { MTLLoader } from './libs/plugins/MTLLoader.js';
+import { OBJLoader } from './libs/plugins/OBJLoader.js';
 
-import { geolocation, initCommon, getMouseSphereLocation } from './common.js';
+import { geolocation, initCommon, getMouseSphereLocation, myLoadingComplete } from './common.js';
 import { CelestalSphere, StarWord, StarParticle } from './star.js';
 
 const socket = io();
@@ -13,7 +15,7 @@ const container = document.getElementById("canvas");
 //objects
 const celestalSphere = new CelestalSphere(scene);
 const starParticle = new StarParticle();
-let earth=null;
+let cannonGroup = new THREE.Group();
 
 //controller
 const gyro = 90.0;
@@ -21,20 +23,87 @@ const gyro = 90.0;
 const clock = new THREE.Clock();
 
 
-function getGyro()
+function initCannonLauncher(loader)
 {
-	return 
+	const mtlLoader= new MTLLoader(loader);
+	const objLoader= new OBJLoader(loader);
+
+	mtlLoader.load( 'assets/cannon.mtl', function ( materials ) {
+		materials.preload();
+		objLoader.setMaterials( materials );
+		objLoader.load( 'assets/cannon.obj', function ( object ) {
+			let cannon=object.children[0];
+			cannon.name="cannon";
+			cannonGroup.add(cannon);
+		});
+	});
 }
+
+function initCannonWheel(loader)
+{
+	const mtlLoader= new MTLLoader(loader);
+	const objLoader= new OBJLoader(loader);
+
+	mtlLoader.load( 'assets/cannon_wheel.mtl', function ( materials ) {
+		materials.preload();
+		objLoader.setMaterials( materials );
+		objLoader.load( 'assets/cannon_wheel.obj', function ( object ) {
+			let cannon_wheel=object.children[0];
+			cannonGroup.add(cannon_wheel);
+		});
+	});
+}
+
+function initCannon(loader)
+{
+	initCannonLauncher(loader);
+	initCannonWheel(loader);
+	scene.add(cannonGroup);
+	cannonGroup.scale.multiplyScalar(4);
+	cannonGroup.position.set(0,105,0);
+}
+
+function rotateCannon(r)
+{
+	const launcher = cannonGroup.getObjectByName("cannon");;
+	if(launcher instanceof THREE.Object3D)
+	{
+		console.log(launcher.rotation);
+		launcher.rotation.x = (r - 90)*Math.PI/180;
+	}
+}
+
+/*
+class cameraMover
+{
+	constructor()
+	{
+		this.camera=camera;
+		
+		this.cameraScene=0;
+	}
+	move()
+	{
+		switch(this.cameraScene)
+		{
+			case 0:
+		}
+	}
+}*/
 
 function init()
 {
-	camera.position.set(0, 160, 450);
+	camera.position.set(0, 160, 300);
 
 	scene.background = new THREE.Color(0x000000);
 
 	starParticle.attach(celestalSphere.hull);
 
-	initCommon(scene);
+	const loader=new THREE.LoadingManager(myLoadingComplete);
+	initCommon(scene, loader);
+//const ambient = new THREE.AmbientLight( 0xcccccc ); // soft white light
+//	scene.add( ambient );
+	initCannon(loader);
 
 	//renderer setting
 	renderer.setPixelRatio( window.devicePixelRatio );
@@ -42,13 +111,16 @@ function init()
 
 	container.appendChild( renderer.domElement );
 
+	setEventListeners();
 	console.log(geolocation);
 }
 function animate()
 {
-	const elapsedTime = clock.getElapsedTime();
 	requestAnimationFrame( animate );
+	const deltaTime = Math.min( 0.1, clock.getDelta() );
+	const elapsedTime = clock.getElapsedTime();
 	starParticle.twinkle(elapsedTime * 0.5);
+//	rotateCannon(elapsedTime * 10);
 	render();
 }
 function render()
@@ -57,6 +129,24 @@ function render()
 }
 init();
 animate();
+
+
+//set event listeners
+function setEventListeners()
+{
+	window.addEventListener( 'resize', onWindowResize );
+}
+
+//dom event
+function onWindowResize() {
+
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+
 
 
 

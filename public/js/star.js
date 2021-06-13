@@ -104,6 +104,9 @@ class StarWord
 
 		const texData= makeTextMaterial(word, "#ffefac");
 		this.texture = texData.tex;
+		this.wordWidth=texData.width;
+		this.wordHeight=texData.height;
+
 		this.material=new THREE.SpriteMaterial({
 			map:this.texture, 
 			color:0xffffff, 
@@ -122,7 +125,7 @@ class StarWord
 
 		this.mesh = new THREE.Sprite(this.material);
 		this.mesh.position.copy(position);
-		this.mesh.scale.set(texData.width * this.lumen, texData.height* this.lumen, 1.0);
+		this.mesh.scale.set(this.wordWidth * this.lumen, this.wordHeight * this.lumen, 1.0);
 		this.mesh.layers.enable(1); //bloom
 
 		this.isTransition=transition;
@@ -164,7 +167,7 @@ class StarWord
 	changeLumen(lumen)
 	{
 		this._lumen = lumen;
-		this.mesh.scale.set(texData.width * this.lumen, texData.height* this.lumen, 1.0);
+		this.mesh.scale.set(this.wordWidth * this.lumen, this.wordHeight * this.lumen, 1.0);
 	}
 	update(delta)
 	{

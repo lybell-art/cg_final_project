@@ -93,12 +93,18 @@ io.on('connection', function(socket){
   });
 
 
-  socket.on('launch_star', function(text, gyro, loc){
-    console.log(text, gyro, loc);
-    addDB(text, function(text, lumen){
-      io.emit('broadcast_star', text, gyro, loc, lumen);
-    });
-  });
+  socket.on('launch_star', function(datum)
+  {
+    console.log("Launched!");
+    addDB(datum.text, 
+      function(text, lumen)
+      {
+        console.log("DB Added!");
+        io.emit('broadcast_star', text, datum.gyro, datum.loc, lumen);
+      }
+    );
+  }
+  );
 
   socket.on('debug', function(text){
     console.log(text);

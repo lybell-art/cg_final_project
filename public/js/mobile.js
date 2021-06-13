@@ -485,6 +485,7 @@ function animate()
 		cannonSphere.update(deltaTime);
 		progressLaunchParticles(deltaTime);
 		if(introViewingCount < 5) introView(elapsedTime);
+		if(!canGyroSensor) updateAngle({beta:null});
 	}
 //	rotateCannon(elapsedTime * 10);
 	render();
@@ -537,7 +538,6 @@ function setEventListeners()
 		if(myStarWord != "") isCorrectedSubmitted=true;
 		inputForm.blur();
 		cannonSphere.active(myStarWord);
-		socket.emit('debug', myStarWord);
 		setTimeout(function() {
 			cameraMover.callScene(4, CameraMover.FORWARD);
 			showContents(6);
@@ -622,11 +622,11 @@ function launch_star(e)
 {
 	if(myStarWord != "")
 	{
-		socket.emit('debug', myStarWord);
-		socket.emit('debug', gyro);
-		socket.emit('debug', geolocation);
+//		socket.emit('debug', myStarWord);
+//		socket.emit('debug', gyro);
+//		socket.emit('debug', geolocation);
 		shooters.push(new wordShooter(myStarWord, gyro, 1));
-//		socket.emit('launch_star', myStar.value, gyro, geolocation);
+		socket.emit('launch_star', {text : myStarWord, gyro:gyro, loc:geolocation});
 	}
 
 	setTimeout(function() {

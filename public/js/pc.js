@@ -379,7 +379,7 @@ function animate()
 	const elapsedTime = clock.getElapsedTime();
 	starParticle.twinkle(elapsedTime * 0.5);
 	progressLaunchParticles(deltaTime);
-	
+
 	starCursor.update(deltaTime);
 
 	//dom intro captions
@@ -459,7 +459,7 @@ function onMousePressStart(e)
 		}
 	}
 
-	shooters.push(new wordShooter("test", 45, geolocation, 1));
+//	shooters.push(new wordShooter("test", 45, geolocation, 1));
 
 }
 
@@ -579,7 +579,8 @@ socket.on('initialize_star', function(db){
 });
 
 socket.on('broadcast_star', function(msg, angle, loc, lumen){
-	if(this.stars[word] === undefined)
+	console.log(msg, angle, loc, lumen);
+	if(celestalSphere.stars[msg] === undefined)
 	{
 		shooters.push(new wordShooter(msg, angle, loc, lumen));
 	}

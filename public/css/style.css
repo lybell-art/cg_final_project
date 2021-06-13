@@ -171,26 +171,12 @@ p{
 	}
 }
 
-
-
-#test_button{
-	position: relative;
-	z-index: 100;
-	width: 80px;
-	height: 80px;
-	bottom: 0%;
-	border-radius: 50%;
-	margin: 30% auto 0px auto;
-	background-color: #ffffff;
-	color: #ffffff;
-	box-shadow: 0 0 20px #fff, 0 0 50px #ffefac;
-}
-
 #buttons{
 	width: 110px;
 	position: fixed;
 	top: 10px;
 	right: 10px;
+	z-index: 100;
 
 	-webkit-user-select: none;
 	-moz-user-select: none;
@@ -337,6 +323,7 @@ p{
 	width: 100%;
 	bottom: 50px;
 	position: absolute;
+	z-index: 150;
 }
 
 #shoot-button img{

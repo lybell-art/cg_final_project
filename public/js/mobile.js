@@ -4,7 +4,7 @@ import { OBJLoader } from './libs/plugins/OBJLoader.js';
 import { Bezier }  from './libs/bezierEasing.js';
 
 import { geolocation, initCommon, getMouseSphereLocation, myLoadingComplete, bgm, isLoaded } from './common.js';
-import { CelestalSphere, StarWord, StarParticle } from './star.js';
+import { CelestalSphere, StarWord, StarParticle, LaunchParticle, makeTextMaterial } from './star.js';
 
 const socket = io();
 
@@ -18,14 +18,22 @@ const celestalSphere = new CelestalSphere(scene);
 const starParticle = new StarParticle();
 let cannonGroup = new THREE.Group();
 let cameraMover;
+let cannonSphere;
+const shooters = [], generatingStarWords = [];
 
 //controller
 let gyro = 90.0;
 const canGyroSensor = !!window.DeviceOrientationEvent;
+if(canGyroSensor) document.getElementById("gyro_inavailable").remove();
+else {document.getElementById("gyro_available").remove(); gyro=45.0;}
+const hammertime = new Hammer(container);
+hammertime.get('swipe').set({ direction: Hammer.DIRECTION_UP });
 
 //dom controller
 let viewingContent = 0;
 let introViewingCount = 0;
+let myStarWord="";
+let isCorrectedSubmitted = false;
 
 const clock = new THREE.Clock();
 
@@ -70,12 +78,15 @@ function initCannon(loader)
 	cannonGroup.position.set(0,105,0);
 }
 
-function rotateCannon(r)
+function rotateCannon(r, force=false)
 {
 	const launcher = cannonGroup.getObjectByName("cannon");
 	if(launcher instanceof THREE.Object3D)
 	{
-		launcher.rotation.x = (r - 90)*Math.PI/180;
+		let pAngle=launcher.rotation.x;
+		let newAngle=(r - 90)*Math.PI/180;
+		if(force) launcher.rotation.x = newAngle;
+		else launcher.rotation.x = pAngle*0.2 + newAngle*0.8;
 	}
 }
 
@@ -170,6 +181,18 @@ class CameraMover
 				this.camera.rotation.x=r;
 				this.camera.position.copy(res);
 				break;
+			case 4: //launch2
+				res=this.lerpVector([0, 140, 130], [0, 110, 140], CameraMover.EASE);
+				r = this.lerpAngle(0, -Math.PI/16, CameraMover.EASE);
+				this.camera.rotation.x=r;
+				this.camera.position.copy(res);
+				break;
+			case 5: //reset
+				res=this.lerpVector([0, 110, 140], [0, 160, 300], CameraMover.EASE_INOUT);
+				r = this.lerpAngle(-Math.PI/16, 0, CameraMover.EASE_INOUT);
+				this.camera.rotation.x=r;
+				this.camera.position.copy(res);
+				break;
 		}
 	}
 	frameForward(delta)
@@ -181,6 +204,7 @@ class CameraMover
 		else this.frame += speed[this.cameraScene]* delta;
 
 		let isLerpEnded=false;
+
 		switch(this.isPendingLerp)
 		{
 			case CameraMover.NO_LERP:
@@ -223,6 +247,7 @@ class CameraMover
 			switch(this.cameraScene)
 			{
 				case 0:
+				case 5:
 					this.callScene(1, CameraMover.LOOP_LERP); break;
 			}
 		}
@@ -240,12 +265,113 @@ class CameraMover
 	}
 }
 
+class CannonSphereMover
+{
+	constructor(scene)
+	{
+		this.word="";
+		this.frame=0;
+
+		const geometry = new THREE.SphereGeometry( 3, 32, 32 );
+
+		const texData= makeTextMaterial("", "#ffefac");
+		this.texture = texData.tex;
+		this.material=new THREE.MeshBasicMaterial({
+			map:this.texture, 
+			color:0xffffff, 
+			transparent:true});
+		this.mesh=new THREE.Mesh(geometry, this.material);
+		scene.add(this.mesh);
+
+		this.visible=false;
+		this.z=160;
+	}
+	get visible()
+	{
+		return this.mesh.visible;
+	}
+	get z()
+	{
+		return this.mesh.position.y;
+	}
+	set visible(v)
+	{
+		this.mesh.visible=!!v;
+	}
+	set z(a)
+	{
+		this.mesh.position.y = a;
+	}
+	active(word)
+	{
+		const texData= makeTextMaterial(word, "#ffefac");
+		this.texture = texData.tex;
+		this.material.map = this.texture;
+		this.visible=true;
+		this.z=180;
+	}
+	update(delta)
+	{
+		if(this.visible)
+		{
+			this.frame +=delta * 0.25;
+			let v=ease_inout(this.frame);
+
+			const lerp=(s, e, f)=>s + f*(e-s);
+
+			this.z = lerp(180, 110, v);
+
+			if(this.frame > 1.0)
+			{
+				this.frame = 0.0;
+				this.z=180;
+				this.visible=false;
+			}
+		}
+	}
+}
+
+class wordShooter
+{
+	constructor(word, angle, lumen)
+	{
+		const deg=Math.PI/180;
+		let startPos=new THREE.Vector3(0,105, -0);
+
+		let newAngle=THREE.MathUtils.clamp(angle, 0, 90);
+
+		let direction=new THREE.Vector3(0,Math.sin(angle * deg), -Math.cos(angle * deg));
+
+		this.word=word;
+		this.lumen=lumen;
+		this.radius=800;
+
+		this.particleSystem=new LaunchParticle(startPos, direction, 1, 12, 0.15, 4, true);
+		this.particleSystem.attach(scene);
+
+	}
+	update(delta)
+	{
+		this.particleSystem.thrust();
+		this.particleSystem.update(delta);
+		if(this.particleSystem.position.length() > this.radius)
+		{
+			let hitPoint = this.particleSystem.position;
+			hitPoint.applyMatrix4(celestalSphere.invMatrix);
+			const newStar=celestalSphere.add(this.word, this.lumen, hitPoint, true);
+			if(newStar != null) generatingStarWords.push(newStar);
+			this.particleSystem.callDestroy();
+		}
+		return this.particleSystem.isDead;
+	}
+}
+
 //dom contents view
 
 function showContents(i)
 {
 	if(viewingContent == i) return;
-	else if(viewingContent != 0 ) hideContents(i);
+	else if(viewingContent != 0 ) hideContents(viewingContent);
 
 	let id=((i>=3) ? "mov_" : "") + "page"+i;
 	const content=document.getElementById(id);
@@ -292,9 +418,37 @@ function introView(time)
 	}
 }
 
+function progressLaunchParticles(deltaTime)
+{
+	//animate word shooter particle systems
+	const deadShooterIndices=[];
+	for(let i=0; i<shooters.length; i++)
+	{
+		let isDead=false;
+		isDead=shooters[i].update(deltaTime);
+		if(isDead) deadShooterIndices.push(i);
+	}
+	for(let j=deadShooterIndices.length-1; j>=0; j--)
+	{
+		shooters.splice(deadShooterIndices[j], 1);
+	}
+
+	//animate new star words
+	
+	const deadStarIndices=[];
+	for(let i=0; i<generatingStarWords.length; i++)
+	{
+		generatingStarWords[i].update(deltaTime);
+		if(generatingStarWords[i].isTransition == false) deadStarIndices.push(i);
+	}
+	for(let j=deadStarIndices.length-1; j>=0; j--)
+	{
+		generatingStarWords.splice(deadStarIndices[j], 1);
+	}
+}
+
 function init()
 {
-//	camera.position.set(0, 160, 800);
 	cameraMover=new CameraMover(camera);
 	cameraMover.update(0);
 
@@ -309,6 +463,7 @@ function init()
 		});
 	initCommon(scene, loader);
 	initCannon(loader);
+	cannonSphere=new CannonSphereMover(scene);
 
 	//renderer setting
 	renderer.setPixelRatio( window.devicePixelRatio );
@@ -327,6 +482,8 @@ function animate()
 	if(isLoaded)
 	{
 		cameraMover.update(deltaTime);
+		cannonSphere.update(deltaTime);
+		progressLaunchParticles(deltaTime);
 		if(introViewingCount < 5) introView(elapsedTime);
 	}
 //	rotateCannon(elapsedTime * 10);
@@ -346,14 +503,61 @@ function setEventListeners()
 	window.addEventListener( 'resize', onWindowResize );
 	window.addEventListener('focus', bgmReplay);
 	window.addEventListener('blur', bgmPause);
-	window.addEventListener('touchstart', (e)=>{socket.emit('debug', !!window.DeviceOrientationEvent);})
+//	window.addEventListener('touchstart', (e)=>{ shooters.push(new wordShooter('test', 90, 1)); });
+
+	let button=document.getElementById('shoot-button');
+	button.addEventListener('touchstart', typeStart);
+
+	let myForm=document.getElementById('input_star');
+
+	const inputForm=document.getElementById("my_star");
+	const inputVisual=document.getElementById("inputRenderBox");
+	inputForm.addEventListener('input', (e)=> inputVisual.textContent = e.target.value );
+
+	inputForm.onblur =function()
+	{
+		inputForm.value="";
+		inputVisual.textContent = "";
+		if(!isCorrectedSubmitted) // submit falled
+		{
+			cameraMover.callScene(1, CameraMover.BACKWARD);
+			showContents(3);
+		}
+		else // submit success
+		{
+			cameraMover.callScene(3, CameraMover.FORWARD);
+			showContents(5);
+
+		}
+		isCorrectedSubmitted=false;
+	}
+
+	myForm.addEventListener('submit', (e)=>{
+		myStarWord=inputForm.value;
+		if(myStarWord != "") isCorrectedSubmitted=true;
+		inputForm.blur();
+		cannonSphere.active(myStarWord);
+		socket.emit('debug', myStarWord);
+		setTimeout(function() {
+			cameraMover.callScene(4, CameraMover.FORWARD);
+			showContents(6);
+		}, 2000);
+		e.preventDefault();
+	}
+	);
 
 	window.addEventListener('keydown',(e)=>
 	{
 		if(e.key == "2") cameraMover.callScene(2, CameraMover.BACKWARD);
 		if(e.key == "3") cameraMover.callScene(3, CameraMover.FORWARD);
+		if(e.key == "4") cameraMover.callScene(4, CameraMover.FORWARD);
+		if(e.key == "5") cameraMover.callScene(5, CameraMover.NO_LOOP);
+//		if(e.key == "4") cannonSphere.active("dimi");
 	});
 
+	hammertime.on('swipeup', function(e){
+		if(viewingContent == 6) launch_star();
+	});
 }
 
 //dom event
@@ -378,22 +582,59 @@ function bgmReplay()
 }
 
 
+function typeStart(e)
+{
+	if(viewingContent == 3)
+	{
+		cameraMover.callScene(2, CameraMover.BACKWARD);
+		showContents(4);
+		const myStar=document.getElementById("my_star");
+		myStar.focus();
+		for(let i=0;i<10; i++) myStar.click();
+	}
+	e.preventDefault();
+}
+
 
 
 function updateAngle(e)
 {
+	if(viewingContent != 6)
+	{
+		rotateCannon(90.0, true);
+		return;
+	}
 	gyro=e.beta;
-	rotateCannon(gyro);
-	socket.emit('debug', gyro);
+	if(gyro != null)
+	{
+		rotateCannon(gyro);
+		socket.emit('debug', gyro);
+	}
+	else
+	{
+		gyro=45.0;
+		rotateCannon(45.0);
+	}
+	
 }
 
 function launch_star(e)
 {
-	const myStar=document.getElementById("my_star");
-	console.log(myStar.value);
-	if(myStar.value == "") return;
-	socket.emit('launch_star', myStar.value, gyro, geolocation);
-	myStar.value="";
+	if(myStarWord != "")
+	{
+		socket.emit('debug', myStarWord);
+		socket.emit('debug', gyro);
+		socket.emit('debug', geolocation);
+		shooters.push(new wordShooter(myStarWord, gyro, 1));
+//		socket.emit('launch_star', myStar.value, gyro, geolocation);
+	}
+
+	setTimeout(function() {
+		rotateCannon(90.0, true);
+		cameraMover.callScene(5, CameraMover.NO_LOOP);
+		showContents(3);
+	}, 2000);
+
 }
 
 socket.on('initialize_star', function(db){

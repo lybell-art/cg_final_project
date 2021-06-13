@@ -124,24 +124,54 @@ p{
 
 
 #input_star {
-	display: none;
     position: fixed;
     top: 20%;
     left: 0px;
     width: 100%;
-    height: 60%;
 }
 
-#my_star {
+#inputRenderBox {
     width: 100%;
+    top: 25%;
+    position: absolute;
     background-color: transparent;
     border: 0;
     color: #fff;
-    font-size: 7em;
+    font-size: 24px;
     text-align: center;
     font-family: 'Noto Serif KR';
     text-shadow: 0 0 10px #fff, 0 0 20px #ffefac;
 }
+
+#inputRenderBox:after {
+    width: 2px;
+    background-color: #ffffff;
+    height: 24px;
+    margin-left: 6px;
+    display: inline-block;
+    content: '';
+    transform: translateY(2px);
+    box-shadow: 0 0 10px #fff, 0 0 20px #ffefac;
+    animation : blink 1s ease-in-out infinite;
+}
+
+@keyframes blink
+{ 
+	from {
+		opacity:0.0;
+	}
+	30%{
+		opacity:1.0;
+	}
+	70%{
+		opacity:1.0;
+	}
+	to {
+		opacity:0.0;
+	}
+}
+
+
 
 #test_button{
 	position: relative;
@@ -186,6 +216,12 @@ p{
 
 .invisible{
 	display: none;
+}
+
+#contents{
+	position: absolute;
+	width: 100%;
+	height: 100%;
 }
 
 #contents div{
@@ -236,6 +272,78 @@ p{
 
 .center-caption .en{
 	font-size: 12px;
+}
+
+.top-caption {
+    width: 100%;
+    top: 5%;
+    position: absolute;
+    display: -webkit-box;
+    display: -moz-box;
+    display: box;
+    -webkit-box-orient: vertical;
+    -moz-box-orient: vertical;
+    box-orient: vertical;
+    -webkit-box-pack: center;
+    -moz-box-pack: center;
+    box-pack: center;
+    -webkit-box-align: center;
+    -moz-box-align: center;
+    box-align: center;
+}
+
+.top-caption p {
+    text-align: center;
+}
+
+.top-caption .ko {
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.top-caption .en {
+    font-size: 10px;
+}
+
+.bottom-caption {
+    width: 100%;
+    bottom: 5%;
+    position: absolute;
+    display: -webkit-box;
+    display: -moz-box;
+    display: box;
+    -webkit-box-orient: vertical;
+    -moz-box-orient: vertical;
+    box-orient: vertical;
+    -webkit-box-pack: center;
+    -moz-box-pack: center;
+    box-pack: center;
+    -webkit-box-align: center;
+    -moz-box-align: center;
+    box-align: center;
+}
+
+.bottom-caption p {
+    text-align: center;
+}
+
+.bottom-caption .ko,.en {
+    font-size: 10px;
+}
+
+
+#shoot-button
+{
+	width: 100%;
+	bottom: 50px;
+	position: absolute;
+}
+
+#shoot-button img{
+	display: block;
+	width: 60px;
+	height: 60px;
+	margin: 0px auto;
 }
 
 .show{

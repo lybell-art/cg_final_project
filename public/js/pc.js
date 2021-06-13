@@ -316,6 +316,35 @@ function introView(time)
 }
 
 
+function progressLaunchParticles(deltaTime)
+{
+	//animate word shooter particle systems
+	const deadShooterIndices=[];
+	for(let i=0; i<shooters.length; i++)
+	{
+		let isDead=false;
+		isDead=shooters[i].update(deltaTime);
+		if(isDead) deadShooterIndices.push(i);
+	}
+	for(let j=deadShooterIndices.length-1; j>=0; j--)
+	{
+		shooters.splice(deadShooterIndices[j], 1);
+	}
+
+	//animate new star words
+	
+	const deadStarIndices=[];
+	for(let i=0; i<generatingStarWords.length; i++)
+	{
+		generatingStarWords[i].update(deltaTime);
+		if(generatingStarWords[i].isTransition == false) deadStarIndices.push(i);
+	}
+	for(let j=deadStarIndices.length-1; j>=0; j--)
+	{
+		generatingStarWords.splice(deadStarIndices[j], 1);
+	}
+}
+
 function init()
 {
 	camera.position.set(0, 160, 450);
@@ -349,33 +378,8 @@ function animate()
 	const deltaTime = Math.min( 0.1, clock.getDelta() );
 	const elapsedTime = clock.getElapsedTime();
 	starParticle.twinkle(elapsedTime * 0.5);
-
-	//animate word shooter particle systems
-	const deadShooterIndices=[];
-	for(let i=0; i<shooters.length; i++)
-	{
-		let isDead=false;
-		isDead=shooters[i].update(deltaTime);
-		if(isDead) deadShooterIndices.push(i);
-	}
-	for(let j=deadShooterIndices.length-1; j>=0; j--)
-	{
-		shooters.splice(deadShooterIndices[j], 1);
-	}
-
-	//animate new star words
+	progressLaunchParticles(deltaTime);
 	
-	const deadStarIndices=[];
-	for(let i=0; i<generatingStarWords.length; i++)
-	{
-		generatingStarWords[i].update(deltaTime);
-		if(generatingStarWords[i].isTransition == false) deadStarIndices.push(i);
-	}
-	for(let j=deadStarIndices.length-1; j>=0; j--)
-	{
-		generatingStarWords.splice(deadStarIndices[j], 1);
-	}
-
 	starCursor.update(deltaTime);
 
 	//dom intro captions

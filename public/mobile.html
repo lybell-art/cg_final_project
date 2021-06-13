@@ -6,6 +6,7 @@
 	<style>
 		html, body {margin:0; padding:0; overflow:hidden;} 
 	</style>
+	<script type="text/javascript" src="https://hammerjs.github.io/dist/hammer.min.js"></script>
 	<link href="https://fonts.googleapis.com/css?family=Noto+Serif+KR&display=swap" rel="stylesheet">
 	<link rel="stylesheet" type="text/css" href="css/style.css">
 	<link rel="shortcut icon" href="#">
@@ -25,64 +26,77 @@
 	    </div>
     </div>
 
-	<div id="canvas" oncontextmenu="return false"></div>
-	<div id="contents">
-		<div id="page1" class="hidden">
-			<div class="center-caption">
-				<p class="ko">계절이 지나가는 하늘에는<br/>낱말의 별로 가득 차 있습니다.</p>
-				<p class="en">In the sky where seasons pass,<br/>the star-words fill the air.</p>
+	<div id="canvas" oncontextmenu="return false">
+		<div id="contents">
+			<div id="page1" class="hidden">
+				<div class="center-caption">
+					<p class="ko">계절이 지나가는 하늘에는<br/>낱말의 별로 가득 차 있습니다.</p>
+					<p class="en">In the sky where seasons pass,<br/>the star-words fill the air.</p>
+				</div>
 			</div>
-		</div>
-		<div id="page2" class="hidden">
-			<div class="center-caption">
-				<p class="ko">나는 아무 걱정도 없이<br/>낱말 속에 별들을 다 헬 듯합니다.</p>
-				<p class="en">It seems that I can count all the stars<br/>in word-full sky without any worries.</p>
+			<div id="page2" class="hidden">
+				<div class="center-caption">
+					<p class="ko">나는 아무 걱정도 없이<br/>낱말 속에 별들을 다 헬 듯합니다.</p>
+					<p class="en">It seems that I can count all the stars<br/>in word-full sky without any worries.</p>
+				</div>
 			</div>
-		</div>
-		<div id="mov_page3" class="hidden">
-			<div class="center-caption">
-				<p class="ko">당신이 소중히 하는, "별"들을<br/>대포에 담아 쏘아올리세요.</p>
-				<p class="en">Shoot up your cherished "stars" in a cannon.</p>
+			<div id="mov_page3" class="hidden">
+				<div class="center-caption">
+					<p class="ko">당신이 소중히 하는, "별"들을<br/>대포에 담아 쏘아올리세요.</p>
+					<p class="en">Shoot up your cherished "stars" in a cannon.</p>
+				</div>
+				<div id="shoot-button">
+					<img  src="assets/img/launch_star.png" />
+				</div>
 			</div>
-			<div id="shoot-button"></div>
-		</div>
-		<div id="mov_page4" class="hidden">
-			<div class="top-caption">
-				<p class="ko">지금 당장 생각나는 아무거나 적어 주세요.</p>
-				<p class="en">Please type anything that comes to your mind right now.</p>
-			</div>
-			<div id="input_star">
-				<input id="my_star" type="text" />
-<!--				<div id="test_button">Submit</div>-->
-			</div>
-		</div>
-		<div id="mov_page5" class="hidden">
-			<div class="center-caption">
-				<p class="ko">이제 당신의 별을 쏘아올릴 시간입니다.</p>
-				<p class="en">It's time to shoot your "star" up.</p>
-			</div>
-		</div>
-		<div id="mov_page6" class="hidden">
-			<div id="gyro_available" class="top-caption">
-				<p class="ko">스마트폰을 기울여 각도를 조절하고, 스와이프로 쏘세요!</p>
-				<p class="en">Tilt your smartphone to adjust the angle, and shoot with a swipe!</p>
-			</div>
-			<div id="gyro_inavailable">
+			<div id="mov_page4" class="hidden">
 				<div class="top-caption">
-					<p class="ko">스와이프로 쏘세요!</p>
-					<p class="en">shoot with a swipe!</p>
+					<p class="ko">지금 당장 생각나는 아무거나 적어 주세요.</p>
+					<p class="en">Please type anything that comes to your mind right now.</p>
 				</div>
-				<div class="bottom-caption">
-					<p class="ko">해당 기기는 자이로 센서를 지원하지 않습니다. https로 접속하거나 최신 웹 브라우저를 이용하세요.</p>
-					<p class="en">Your device doesn't support gyro sensor. Go to https or use the latest web browser.</p>
+				<form id="input_star" style="position:fixed; top:-9999px;" action>
+					<input id="my_star"  type="text" />
+					<input type="submit" />
+				</form>
+				<p id="inputRenderBox"></p>
+	<!--			<div id="input_star">
+					<input id="my_star" type="text" />
+					<div id="test_button">Submit</div>
+				</div>-->
+			</div>
+			<div id="mov_page5" class="hidden">
+				<div class="center-caption">
+					<p class="ko">이제 당신의 별을 쏘아올릴 시간입니다.</p>
+					<p class="en">It's time to shoot your "star" up.</p>
 				</div>
 			</div>
-			<div id="gyro_inavailable" class="top-caption">
-				<p class="ko">스와이프로 쏘세요!</p>
-				<p class="en">shoot with a swipe!</p>
-			</div>
+			<div id="mov_page6" class="hidden">
+				<div id="gyro_available">
+					<div class="top-caption">
+						<p class="ko">스마트폰을 기울여 각도를 조절하고,<br/>스와이프로 쏘세요!</p>
+						<p class="en">Tilt your smartphone to adjust the angle,<br/>and shoot with a swipe!</p>
+					</div>
+					<div id="gyro_anim">
+						<img src="assets/img/gyro.png" />
+					</div>
+				</div>
+				<div id="gyro_inavailable">
+					<div class="top-caption">
+						<p class="ko">스와이프로 쏘세요!</p>
+						<p class="en">shoot with a swipe!</p>
+					</div>
+					<div class="bottom-caption">
+						<p class="ko">해당 기기는 자이로 센서를 지원하지 않습니다.<br/>https로 접속하거나 최신 웹 브라우저를 이용하세요.</p>
+						<p class="en">Your device doesn't support gyro sensor.<br/>Go to https or use the latest web browser.</p>
+					</div>
+				</div>
+				<div id="swipe_anim">
+					<img src="assets/img/swipe_hand.png" />
+					<div></div>
+				</div>
 
-<!--			<img id="swipe" src="assets/img/screenshot.png" /> -->
+	<!--			<img id="swipe" src="assets/img/screenshot.png" /> -->
+			</div>
 		</div>
 	</div>
 

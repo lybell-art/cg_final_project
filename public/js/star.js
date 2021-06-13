@@ -319,6 +319,8 @@ class LaunchParticle
 		this.geometry.setAttribute( 'alpha', new THREE.Float32BufferAttribute( alphas, 1 ).setUsage( THREE.DynamicDrawUsage ) );
 		this.geometry.setAttribute( 'alive', new THREE.Float32BufferAttribute( alives, 1 ).setUsage( THREE.DynamicDrawUsage ) );
 
+		this.geometry.boundingSphere = new THREE.Sphere(this._position, 800);
+
 		const shader = pointShader;
 		const material = new THREE.ShaderMaterial( {
 			fragmentShader: shader.fragmentShader,
@@ -366,6 +368,8 @@ class LaunchParticle
 		let prePos=this.position;
 		this._position.copy(newPos);
 		this._velocity = newPos.clone().sub(prePos);
+
+		this.hull.geometry.boundingSphere.center.copy(this._position);
 	}
 	thrust()
 	{
@@ -373,6 +377,9 @@ class LaunchParticle
 
 		if(this.isGravityApplied) this._velocity.y -= 0.01;
 		this._position.add(this._velocity);
+
+		//To prevent the particle from disappearing completely at a certain camera angle
+		this.hull.geometry.boundingSphere.center.copy(this._position);
 	}
 	update(delta)
 	{
@@ -541,4 +548,4 @@ const pointShader = {
 
 
 
-export { CelestalSphere, StarWord, StarParticle, LaunchParticle };
+export { CelestalSphere, StarWord, StarParticle, LaunchParticle, makeTextMaterial };

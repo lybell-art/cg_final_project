@@ -71,11 +71,12 @@ function initLights(scene)
 	const lights = [];
 	for(let i=0;i<4;i++) lights[i] = new THREE.PointLight(0xffffff, 1, 0);
 
-	lights[ 0 ].position.set( 0, -400, 0 );
-	lights[ 1 ].position.set( 0, 400, 400 );
+	lights[ 0 ].position.set( 0, -600, 0 );
+	lights[ 1 ].position.set( 0, 600, 600 );
 	lights[ 1 ].power = 5.0;
-	lights[ 2 ].position.set( -200, 400, -200 );
-	lights[ 3 ].position.set( 200, 400, -200 );
+	lights[ 2 ].position.set( -300, 600, -300 );
+	lights[ 2 ].power = 0.5;
+	lights[ 3 ].position.set( 300, 600, -300 );
 
 	for(let i=0;i<4;i++) scene.add(lights[i]);
 
@@ -92,7 +93,7 @@ function initSounds(loader)
 	});
 }
 
-function initBGM()
+function initBGM(e)
 {
 	if(!isBGMPlaying) bgm.play();
 	isBGMPlaying=true;

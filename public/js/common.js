@@ -97,6 +97,7 @@ function initBGM(e)
 {
 	if(!isBGMPlaying) bgm.play();
 	isBGMPlaying=true;
+	isLoaded=true;
 }
 
 function initCommon(scene, loader=undefined)
@@ -152,11 +153,26 @@ function getMouseSphereLocation(camera, mousePos, radius)
 
 function myLoadingComplete()
 {
+	const loadingBar = document.getElementsByClassName("loading-div");
+	console.log(loadingBar);
+	for(let i=0;i<loadingBar.length; i++)
+	{
+		loadingBar[i].classList.add( 'fade-out' );
+//		loadingBar[i].addEventListener( 'transitionend', (e)=>{e.target.remove();} );
+	}
+	const startButton = document.getElementById( 'start_button' );
+	startButton.classList.add( 'showStart' );
+	startButton.addEventListener( 'click', mediaStart );
+}
+
+
+function mediaStart(e)
+{
 	const loadingScreen = document.getElementById( 'loading-screen' );
 	loadingScreen.classList.add( 'fade-out' );
-	loadingScreen.addEventListener( 'transitionend', (e)=>{e.target.remove(); isLoaded=true;} );
+	loadingScreen.addEventListener( 'transitionend', (e)=>{e.target.remove();} );
 
-	window.addEventListener('click',initBGM);
+	initBGM();
 }
 
 export {rotateEarth, initCommon, getMousePlaneLocation, getMouseSphereLocation, myLoadingComplete};

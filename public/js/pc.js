@@ -31,6 +31,7 @@ let pickedStar=null;
 let starCursor = null;
 
 const clock = new THREE.Clock();
+let clockResetted=false;
 
 //postprocessing
 const darkMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } ); //for avoiding overlay
@@ -93,8 +94,12 @@ class StarLines
 		this.startPos = new THREE.Vector3();
 		let geometry = new THREE.BufferGeometry();
 		geometry.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array(2 * 3), 3 ) );
+		geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1000);
 
+		
 		this.currentLine=new THREE.Line( geometry, StarLines.material );
+		
+
 		this.currentLine.layers.enable(1);
 		this.currentLine.visible=false;
 		this.parent = parent;
@@ -353,11 +358,7 @@ function init()
 
 	starParticle.attach(celestalSphere.hull);
 
-	const loader=new THREE.LoadingManager(function()
-		{
-			myLoadingComplete();
-			clock.start();
-		});
+	const loader=new THREE.LoadingManager(myLoadingComplete);
 
 	initCommon(scene, loader);
 	starLines=new StarLines(celestalSphere.hull);
@@ -386,9 +387,12 @@ function animate()
 	if(isLoaded)
 	{
 		if(introViewingCount < 6) introView(elapsedTime);
+		if(!clockResetted)
+		{
+			clock.start();
+			clockResetted=true;
+		}
 	}
-
-
 	render();
 
 
@@ -512,6 +516,7 @@ function onMousePressEnd(e)
 
 function bgmPause()
 {
+	if(!isLoaded) return;
 	if(!bgm.isPlaying) return;
 	const unmuteButton=document.getElementById('unmute');
 	const muteButton=document.getElementById('mute');
@@ -523,6 +528,7 @@ function bgmPause()
 
 function bgmReplay()
 {
+	if(!isLoaded) return;
 	if(bgm.isPlaying) return;
 	const unmuteButton=document.getElementById('unmute');
 	const muteButton=document.getElementById('mute');

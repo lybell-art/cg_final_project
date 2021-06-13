@@ -28,6 +28,7 @@ if(canGyroSensor) document.getElementById("gyro_inavailable").remove();
 else {document.getElementById("gyro_available").remove(); gyro=45.0;}
 const hammertime = new Hammer(container);
 hammertime.get('swipe').set({ direction: Hammer.DIRECTION_UP });
+let clockResetted=false;
 
 //dom controller
 let viewingContent = 0;
@@ -486,6 +487,12 @@ function animate()
 		progressLaunchParticles(deltaTime);
 		if(introViewingCount < 5) introView(elapsedTime);
 		if(!canGyroSensor) updateAngle({beta:null});
+
+		if(!clockResetted)
+		{
+			clock.start();
+			clockResetted=true;
+		}
 	}
 //	rotateCannon(elapsedTime * 10);
 	render();
@@ -541,19 +548,10 @@ function setEventListeners()
 		setTimeout(function() {
 			cameraMover.callScene(4, CameraMover.FORWARD);
 			showContents(6);
-		}, 2000);
+		}, 4000);
 		e.preventDefault();
 	}
 	);
-
-	window.addEventListener('keydown',(e)=>
-	{
-		if(e.key == "2") cameraMover.callScene(2, CameraMover.BACKWARD);
-		if(e.key == "3") cameraMover.callScene(3, CameraMover.FORWARD);
-		if(e.key == "4") cameraMover.callScene(4, CameraMover.FORWARD);
-		if(e.key == "5") cameraMover.callScene(5, CameraMover.NO_LOOP);
-//		if(e.key == "4") cannonSphere.active("dimi");
-	});
 
 	hammertime.on('swipeup', function(e){
 		if(viewingContent == 6) launch_star();
@@ -571,12 +569,14 @@ function onWindowResize() {
 
 function bgmPause()
 {
+	if(!isLoaded) return;
 	if(!bgm.isPlaying) return;
 	bgm.pause();
 }
 
 function bgmReplay()
 {
+	if(!isLoaded) return;
 	if(bgm.isPlaying) return;
 	bgm.play();
 }

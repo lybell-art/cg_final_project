@@ -21,8 +21,11 @@
     <div id="loading-screen" class="container">
     	<div style="text-align:center;">
 	    	<p class="title">Our own stars</p>
-	    	<div class="loader"></div>
-	    	<p style="font-size: 16px;">Loading...</p>
+			<div class="loading-wrapper">
+		    	<div class="loader loading-div"></div>
+		    	<p style="font-size: 16px;" class="loading-div">Loading...</p>
+		    	<div id="start_button"> <img src="assets/img/launch_star.png" /> </div>
+			</div>
 	    </div>
     </div>
 
@@ -46,7 +49,7 @@
 					<p class="en">Shoot up your cherished "stars" in a cannon.</p>
 				</div>
 				<div id="shoot-button">
-					<img  src="assets/img/launch_star.png" />
+					<img src="assets/img/launch_star.png" />
 				</div>
 			</div>
 			<div id="mov_page4" class="hidden">
@@ -94,20 +97,11 @@
 					<img src="assets/img/swipe_hand.png" />
 					<div></div>
 				</div>
-
-	<!--			<img id="swipe" src="assets/img/screenshot.png" /> -->
 			</div>
 		</div>
 	</div>
 
-<!--
-	<div id="input_star">
-		<input id="my_star" type="text" />
-		<div id="test_button">Submit</div>
-	</div>
--->
-
 	<script src="js/libs/socket.io.min.js"></script>
-	<script type="module" src="js/mobile.js"></script>
+	<script type="module" src="js/mobile.js"></script> 
 </body>
 </html>

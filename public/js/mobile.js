@@ -28,6 +28,7 @@ if(canGyroSensor) document.getElementById("gyro_inavailable").remove();
 else {document.getElementById("gyro_available").remove(); gyro=45.0;}
 const hammertime = new Hammer(container);
 hammertime.get('swipe').set({ direction: Hammer.DIRECTION_UP });
+hammertime.get('pan').set({ direction: Hammer.DIRECTION_HORIZONTAL });
 let clockResetted=false;
 
 //dom controller
@@ -87,7 +88,7 @@ function rotateCannon(r, force=false)
 		let pAngle=launcher.rotation.x;
 		let newAngle=(r - 90)*Math.PI/180;
 		if(force) launcher.rotation.x = newAngle;
-		else launcher.rotation.x = pAngle*0.2 + newAngle*0.8;
+		else launcher.rotation.x = pAngle*0.7 + newAngle*0.3;
 	}
 }
 
@@ -555,6 +556,9 @@ function setEventListeners()
 
 	hammertime.on('swipeup', function(e){
 		if(viewingContent == 6) launch_star();
+	});
+	hammertime.on('panmove', function(e){
+		celestalSphere.rotate(e.velocityX,0);
 	});
 }
 

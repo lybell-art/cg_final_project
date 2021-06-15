@@ -93,13 +93,6 @@ function initSounds(loader)
 	});
 }
 
-function initBGM(e)
-{
-	if(!isBGMPlaying) bgm.play();
-	isBGMPlaying=true;
-	isLoaded=true;
-}
-
 function initCommon(scene, loader=undefined)
 {
 	initGeolocation(loader);
@@ -154,15 +147,17 @@ function getMouseSphereLocation(camera, mousePos, radius)
 function myLoadingComplete()
 {
 	const loadingBar = document.getElementsByClassName("loading-div");
-	console.log(loadingBar);
 	for(let i=0;i<loadingBar.length; i++)
 	{
 		loadingBar[i].classList.add( 'fade-out' );
-//		loadingBar[i].addEventListener( 'transitionend', (e)=>{e.target.remove();} );
 	}
 	const startButton = document.getElementById( 'start_button' );
 	startButton.classList.add( 'showStart' );
-	startButton.addEventListener( 'click', mediaStart );
+	startButton.addEventListener('click', (e)=>{
+		mediaStart(e); 
+		if(!isBGMPlaying) bgm.play();
+		isBGMPlaying=true;
+		isLoaded=true;} );
 }
 
 
@@ -172,7 +167,7 @@ function mediaStart(e)
 	loadingScreen.classList.add( 'fade-out' );
 	loadingScreen.addEventListener( 'transitionend', (e)=>{e.target.remove();} );
 
-	initBGM();
+//	initBGM();
 }
 
 export {rotateEarth, initCommon, getMousePlaneLocation, getMouseSphereLocation, myLoadingComplete};

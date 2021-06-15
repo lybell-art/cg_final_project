@@ -515,7 +515,7 @@ function setEventListeners()
 //	window.addEventListener('touchstart', (e)=>{ shooters.push(new wordShooter('test', 90, 1)); });
 
 	let button=document.getElementById('shoot-button');
-	button.addEventListener('touchstart', typeStart);
+	button.addEventListener('touchstart', typeStart, {passive:false});
 
 	let myForm=document.getElementById('input_star');
 

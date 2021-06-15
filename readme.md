@@ -11,6 +11,26 @@ The speaker of the poem reckons with the stars, which are physical objects, and 
 "Counting the Star-Words" divides the sentences of original literature into words and scatters them into "stars" to completely decompose it. Decomposed words give the user a chance to
 reassemble. The audience can reassemble the original words to their liking and make constellations. Therefore they can do the act of "playing poetry". In addition, they can add their own words, which are shared through databases with other users. The combination of original words and user-added words will allow the public to create a new "night of counting stars".
 
+## **Features**
+![counting-the-stars1](https://user-images.githubusercontent.com/32293736/121978389-0d46e980-cdc3-11eb-9a00-eebd51626e57.png)
+사용자는 다음과 같이, 사람들이 쏘아올린 단어들로 둘러싸인 세상을 보게 됩니다. 빈 화면에 대고 마우스를 드래그하면(모바일은 터치 드래그) 카메라를 회전할 수 있습니다.
+Players see a world surrounded by words that people shoot up. You can rotate the camera by dragging the mouse against an empty screen (touch drag on the mobile).
+
+<img width="1280" alt="counting-the-stars2" src="https://user-images.githubusercontent.com/32293736/121978669-a8d85a00-cdc3-11eb-9963-551905ba7794.png">
+PC 화면에서, 단어를 잡고 드래그하여 원하는 위치에 재배치를 할 수 있습니다.
+On your desktop, You can drag the word and drop the desired position to the relocation of it can do.
+
+![counting-the-stars3](https://user-images.githubusercontent.com/32293736/121978830-fd7bd500-cdc3-11eb-9874-590c1c99bb31.png)
+마우스 우클릭 드래그로 별자리를 생성할 수도 있습니다.
+You can make your own constellation with right-click drag.
+
+<img style="display:inline-box;" width="282" alt="counting-the-stars5" src="https://user-images.githubusercontent.com/32293736/121978897-21d7b180-cdc4-11eb-9106-f2ee18ca1a60.png"> <img style="display:inline-box;" width="282" alt="counting-the-stars6" src="https://user-images.githubusercontent.com/32293736/121978906-243a0b80-cdc4-11eb-99af-a434f753b3a3.png"><br/>
+모바일 화면에서, 버튼을 클릭하면 자신이 쏘아올릴 단어를 입력할 수 있으며, 스마트폰을 기울여 각도를 조절한 뒤, 위쪽 스와이프로 발사할 수 있습니다.
+발사되는 장면은 PC 화면에서도 공유됩니다.
+On the mobile device, you can touch the button to enter the word you want to launch, tilt the smartphone to adjust the angle, and then fire with the top swipe.
+The star-launched scene are also shared on the PC screen.
+
+
 ## Credits
 
 All Code, 3D Assets, Designs - Lybell

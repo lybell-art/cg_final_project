@@ -7,27 +7,32 @@ const MobileDetect=require('mobile-detect'); // to mobile detection & redirectio
 const mongoose = require('mongoose'); // to use db
 
 //DB initialize
-
 mongoose.set('useNewUrlParser', true);
 mongoose.set('useFindAndModify', false);
 mongoose.set('useCreateIndex', true);
 mongoose.set('useUnifiedTopology', true);
-mongoose.connect(process.env.MONGO_DB);
-const db = mongoose.connection;
-db.once('open', ()=>console.log("DB successfully connected"));
-db.on('error',(err)=>console.log("DB connection failed : ", err));
 
-const schema = mongoose.Schema({
-  word: {type:String, required:true, unique:true},
-  count:{type:Number}
-});
-const starModel = mongoose.model('star_list',schema)
+let starModel=null;
 
+async function initializeDB()
+{
+  await mongoose.connect(process.env.MONGO_DB);
+  const db = mongoose.connection;
+  db.once('open', ()=>console.log("DB successfully connected"));
+  db.on('error',(err)=>console.log("DB connection failed : ", err));
+  const schema = mongoose.Schema({
+    word: {type:String, required:true, unique:true},
+    count:{type:Number}
+  });
+  starModel = mongoose.model('star_list',schema);
+}
 
-function loadDB()
+initializeDB();
+
+async function loadDB()
 {
   console.log("DB Loaded!");
-  starModel.find({}, function(err, res){
+  await starModel?.find({}, function(err, res){
     if(err) console.log("Error!", err);
     else io.emit('initialize_star', res);
   });
